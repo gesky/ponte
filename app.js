@@ -206,7 +206,7 @@ $$('.role-card').forEach(btn => {
   btn.addEventListener('click', () => {
     selectedRole = btn.dataset.role;
     $('#reg-step1').style.display = 'none';
-    $('#reg-step2').style.display = 'flex';
+    $('#form-register').style.display = 'flex';
     // Mostrar campos condicionais
     $('#reg-fields-professional').style.display = selectedRole === 'professional' ? 'flex' : 'none';
     $('#reg-fields-employer').style.display = selectedRole === 'employer' ? 'flex' : 'none';
@@ -214,7 +214,7 @@ $$('.role-card').forEach(btn => {
 });
 $('#btn-reg-back').addEventListener('click', () => {
   $('#reg-step1').style.display = 'flex';
-  $('#reg-step2').style.display = 'none';
+  $('#form-register').style.display = 'none';
 });
 
 $('#form-register').addEventListener('submit', async (e) => {
