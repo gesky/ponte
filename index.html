@@ -2,9 +2,9 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#000201" />
-  <meta name="description" content="PONTE — Conectando quem precisa com quem trabalha." />
+  <meta name="description" content="PONTE — Conectando quem precisa com quem trabalha em gastronomia e eventos." />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -16,12 +16,11 @@
 </head>
 <body>
 
-<!-- ── TOAST ── -->
 <div id="toast"></div>
 
-<!-- ════════════════════════════════════════════
+<!-- ══════════════════════════════════════
      AUTH PAGES
-════════════════════════════════════════════ -->
+══════════════════════════════════════ -->
 
 <!-- LOGIN -->
 <div id="page-login" class="page active">
@@ -30,19 +29,17 @@
 
       <div class="auth-logo">
         <svg viewBox="0 0 960 960" xmlns="http://www.w3.org/2000/svg">
-          <g>
-            <path fill="#000201" d="M323.96,730.32h-38.33s0-325.78,0-325.78h38.33s312.08,108.42,312.08,108.42v-108.42h38.33v150.75h-38.33s-312.08-108.44-312.08-108.44v283.47Z"/>
-            <path fill="#000201" d="M674.37,609.73h-111.34v30.58h96.26v26.92h-96.26v32.95h111.34v30.15h-149.67v-150.74h149.67v30.15Z"/>
-            <path fill="#000201" d="M382.53,233.18c42.64,0,63.1,20.68,63.1,52.11s-20.46,52.33-63.1,52.33h-58.58v46.3h-38.33v-150.74h96.91ZM381.03,306.83c17.66,0,26.27-8.61,26.27-21.54s-8.61-21.32-26.27-21.32h-59.01v42.86h59.01Z"/>
-            <path fill="#000201" d="M466.1,307.64c0-43.38,41.73-77.96,102.46-77.96s105.81,30.34,105.81,77.96c0,44.29-34.65,79.78-105.44,79.78-53.65,0-102.83-30.94-102.83-79.78ZM625.94,361.03c0-25.48-62.59-120.43-95.38-120.43-9.32,0-14.9,5.46-14.9,14.86,0,29.73,64.46,121.04,95.01,121.04,10.06,0,15.28-5.16,15.28-15.47Z"/>
-            <path fill="#000201" d="M504.87,638.62h-.23c-16.94-36.01-35.91-53.18-56.23-55.48v143.83h20.32v3.35h-90.33v-3.35h20.32v-143.83c-20.1,2.3-39.07,19.47-56,55.48h-.23v-59.04h162.37v59.04Z"/>
-          </g>
+          <path fill="#000201" d="M323.96,730.32h-38.33s0-325.78,0-325.78h38.33s312.08,108.42,312.08,108.42v-108.42h38.33v150.75h-38.33s-312.08-108.44-312.08-108.44v283.47Z"/>
+          <path fill="#000201" d="M674.37,609.73h-111.34v30.58h96.26v26.92h-96.26v32.95h111.34v30.15h-149.67v-150.74h149.67v30.15Z"/>
+          <path fill="#000201" d="M382.53,233.18c42.64,0,63.1,20.68,63.1,52.11s-20.46,52.33-63.1,52.33h-58.58v46.3h-38.33v-150.74h96.91ZM381.03,306.83c17.66,0,26.27-8.61,26.27-21.54s-8.61-21.32-26.27-21.32h-59.01v42.86h59.01Z"/>
+          <path fill="#000201" d="M466.1,307.64c0-43.38,41.73-77.96,102.46-77.96s105.81,30.34,105.81,77.96c0,44.29-34.65,79.78-105.44,79.78-53.65,0-102.83-30.94-102.83-79.78ZM625.94,361.03c0-25.48-62.59-120.43-95.38-120.43-9.32,0-14.9,5.46-14.9,14.86,0,29.73,64.46,121.04,95.01,121.04,10.06,0,15.28-5.16,15.28-15.47Z"/>
+          <path fill="#000201" d="M504.87,638.62h-.23c-16.94-36.01-35.91-53.18-56.23-55.48v143.83h20.32v3.35h-90.33v-3.35h20.32v-143.83c-20.1,2.3-39.07,19.47-56,55.48h-.23v-59.04h162.37v59.04Z"/>
         </svg>
       </div>
 
       <div class="auth-title">
-        <h1>Bem-vindo ao PONTE.</h1>
-        <p>Conectando quem precisa com quem trabalha.</p>
+        <h1>Bem-vindo</h1>
+        <p>Conectando profissionais e estabelecimentos em Bauru</p>
       </div>
 
       <form id="form-login" class="form-stack">
@@ -55,10 +52,8 @@
           <label>Senha</label>
           <input id="login-pw" type="password" placeholder="••••••••" required autocomplete="current-password" />
         </div>
-        <div style="text-align:right;margin-top:-8px">
-          <button type="button" id="link-forgot" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:.78rem;font-family:var(--font)">
-            Esqueci minha senha
-          </button>
+        <div style="text-align:right;margin-top:-4px">
+          <button type="button" id="link-forgot" class="link-btn">Esqueci minha senha</button>
         </div>
         <button class="btn btn-primary btn-full btn-lg" type="submit" id="btn-login">Entrar</button>
       </form>
@@ -67,6 +62,13 @@
         <span>Não tem conta?</span>
         <a href="#" id="link-to-register">Criar conta</a>
       </div>
+
+      <!-- LGPD -->
+      <p class="lgpd-note">
+        Ao entrar, você concorda com nossa
+        <button type="button" class="link-btn" id="btn-privacy">Política de Privacidade</button>
+        e com o tratamento de dados conforme a LGPD (Lei 13.709/2018).
+      </p>
 
     </div>
   </div>
@@ -82,41 +84,38 @@
         <p>Junte-se ao PONTE em Bauru</p>
       </div>
 
-      <!-- Etapa 1: escolher role -->
-      <div id="reg-step1" style="display:flex;flex-direction:column;gap:16px">
-        <p style="font-size:.9rem;text-align:center;color:var(--muted)">Você é:</p>
+      <!-- Step 1: role -->
+      <div id="reg-step1" style="display:flex;flex-direction:column;gap:12px">
+        <p style="font-size:.88rem;text-align:center;color:var(--muted)">Você é:</p>
         <div class="role-cards">
           <button class="role-card" data-role="professional">
             <span class="role-emoji">👤</span>
             <div>
               <strong>Profissional</strong>
-              <p>Garçom, bartender, cozinheiro ou staff em busca de oportunidades</p>
+              <p>Garçom, bartender, cozinheiro ou staff</p>
             </div>
           </button>
           <button class="role-card" data-role="employer">
             <span class="role-emoji">🏢</span>
             <div>
               <strong>Estabelecimento / Evento</strong>
-              <p>Restaurante, buffet ou produtora que precisa de profissionais</p>
+              <p>Restaurante, buffet ou produtora</p>
             </div>
           </button>
         </div>
       </div>
 
-      <!-- Etapa 2: dados -->
+      <!-- Step 2: data -->
       <form id="form-register" class="form-stack" style="display:none">
         <div id="reg-error" class="alert alert-error" style="display:none"></div>
-
         <div class="field">
           <label>Nome completo</label>
           <input id="reg-name" placeholder="João Silva" required />
         </div>
-
-        <!-- Campos do profissional -->
         <div id="reg-fields-professional" class="form-stack" style="display:none">
           <div class="field">
             <label>Especialidade</label>
-            <select id="reg-category" required>
+            <select id="reg-category">
               <option value="">Selecione...</option>
               <option value="garcom">🍽️ Garçom / Atendente</option>
               <option value="bartender">🍹 Bartender</option>
@@ -125,8 +124,6 @@
             </select>
           </div>
         </div>
-
-        <!-- Campos do contratante -->
         <div id="reg-fields-employer" class="form-stack" style="display:none">
           <div class="field">
             <label>Nome do estabelecimento</label>
@@ -139,19 +136,18 @@
               <option value="bar_restaurante">Bar / Restaurante</option>
               <option value="buffet">Buffet / Casa de Festas</option>
               <option value="hotel">Hotel / Pousada</option>
-              <option value="corporativo">Empresa / Eventos Corporativos</option>
+              <option value="corporativo">Eventos Corporativos</option>
               <option value="produtora">Produtora de Eventos</option>
             </select>
           </div>
         </div>
-
         <div class="field">
           <label>WhatsApp</label>
           <input id="reg-phone" type="tel" placeholder="(14) 99999-9999" required />
         </div>
         <div class="field">
           <label>E-mail</label>
-          <input id="reg-email" type="email" placeholder="seu@email.com" required autocomplete="email" />
+          <input id="reg-email" type="email" placeholder="seu@email.com" required />
         </div>
         <div class="field">
           <label>Senha</label>
@@ -162,10 +158,14 @@
           <input id="reg-pw2" type="password" placeholder="••••••••" required />
         </div>
 
+        <p class="lgpd-note" style="margin-top:-4px">
+          Ao criar conta, você concorda com o tratamento dos seus dados conforme a
+          <button type="button" class="link-btn" id="btn-privacy2">Política de Privacidade</button>
+          e a LGPD.
+        </p>
+
         <button class="btn btn-primary btn-full btn-lg" type="submit" id="btn-register">Criar conta</button>
-        <button type="button" id="btn-reg-back" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:.84rem;font-family:var(--font);text-align:center;padding:4px">
-          ← Voltar
-        </button>
+        <button type="button" id="btn-reg-back" class="link-btn" style="text-align:center;padding:4px">← Voltar</button>
       </form>
 
       <div class="switch-row">
@@ -177,56 +177,74 @@
   </div>
 </div>
 
+<!-- POLÍTICA DE PRIVACIDADE (modal) -->
+<div id="modal-privacy" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;overflow-y:auto;padding:20px">
+  <div style="background:var(--surface);border-radius:20px;padding:24px 20px;max-width:480px;margin:0 auto">
+    <h2 style="margin-bottom:16px">Política de Privacidade</h2>
+    <div style="font-size:.82rem;line-height:1.7;color:var(--cream);opacity:.85;display:flex;flex-direction:column;gap:12px">
+      <p><strong>1. Dados coletados</strong><br>Coletamos nome, e-mail, telefone, especialidade profissional e dados de uso do aplicativo para viabilizar a conexão entre profissionais e estabelecimentos.</p>
+      <p><strong>2. Finalidade</strong><br>Os dados são usados exclusivamente para: criação e gestão de perfil, publicação e candidatura a vagas, avaliações e comunicação entre as partes.</p>
+      <p><strong>3. Compartilhamento</strong><br>Seus dados não são vendidos ou compartilhados com terceiros para fins comerciais. O nome e especialidade do profissional são visíveis para contratantes ao se candidatar a uma vaga.</p>
+      <p><strong>4. Armazenamento</strong><br>Os dados são armazenados na plataforma Firebase (Google Cloud), com servidores certificados e criptografia em trânsito e repouso.</p>
+      <p><strong>5. Seus direitos (LGPD)</strong><br>Conforme a Lei 13.709/2018, você pode a qualquer momento solicitar acesso, correção ou exclusão dos seus dados. Entre em contato pelo e-mail de suporte do PONTE.</p>
+      <p><strong>6. Cookies</strong><br>Utilizamos armazenamento local apenas para manter a sessão ativa. Não utilizamos cookies de rastreamento ou publicidade.</p>
+      <p><strong>7. Contato</strong><br>Dúvidas sobre privacidade? Fale com o time PONTE pelo suporte do aplicativo.</p>
+    </div>
+    <button class="btn btn-primary btn-full" style="margin-top:20px" id="btn-close-privacy">Entendi</button>
+  </div>
+</div>
 
-<!-- ════════════════════════════════════════════
-     APP SHELL (usuário autenticado)
-════════════════════════════════════════════ -->
+
+<!-- ══════════════════════════════════════
+     APP SHELL
+══════════════════════════════════════ -->
 <div class="app-shell">
 
-  <!-- Header -->
   <header class="app-header">
-    <span class="logo-text">PONTE<span class="logo-dot"></span></span>
+    <div class="app-header-logo">
+      <svg viewBox="0 0 960 960" xmlns="http://www.w3.org/2000/svg" width="28" height="28">
+        <rect width="960" height="960" fill="#cc472e" rx="180"/>
+        <path fill="#000201" d="M323.96,730.32h-38.33s0-325.78,0-325.78h38.33s312.08,108.42,312.08,108.42v-108.42h38.33v150.75h-38.33s-312.08-108.44-312.08-108.44v283.47Z"/>
+        <path fill="#000201" d="M674.37,609.73h-111.34v30.58h96.26v26.92h-96.26v32.95h111.34v30.15h-149.67v-150.74h149.67v30.15Z"/>
+        <path fill="#000201" d="M382.53,233.18c42.64,0,63.1,20.68,63.1,52.11s-20.46,52.33-63.1,52.33h-58.58v46.3h-38.33v-150.74h96.91ZM381.03,306.83c17.66,0,26.27-8.61,26.27-21.54s-8.61-21.32-26.27-21.32h-59.01v42.86h59.01Z"/>
+        <path fill="#000201" d="M466.1,307.64c0-43.38,41.73-77.96,102.46-77.96s105.81,30.34,105.81,77.96c0,44.29-34.65,79.78-105.44,79.78-53.65,0-102.83-30.94-102.83-79.78ZM625.94,361.03c0-25.48-62.59-120.43-95.38-120.43-9.32,0-14.9,5.46-14.9,14.86,0,29.73,64.46,121.04,95.01,121.04,10.06,0,15.28-5.16,15.28-15.47Z"/>
+        <path fill="#000201" d="M504.87,638.62h-.23c-16.94-36.01-35.91-53.18-56.23-55.48v143.83h20.32v3.35h-90.33v-3.35h20.32v-143.83c-20.1,2.3-39.07,19.47-56,55.48h-.23v-59.04h162.37v59.04Z"/>
+      </svg>
+    </div>
     <div class="header-right">
-      <span class="header-user"></span>
-      <button id="btn-logout" style="background:none;border:none;cursor:pointer;color:var(--muted);padding:4px" title="Sair">
-        <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-          <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
-        </svg>
-      </button>
+      <span class="header-user" id="header-user-name"></span>
     </div>
   </header>
 
-  <!-- Main content -->
   <div class="app-main">
-
-    <!-- INÍCIO -->
-    <div id="sec-inicio" class="section active"></div>
-
-    <!-- VAGAS (profissional) -->
-    <div id="sec-vagas" class="section"></div>
-
-    <!-- MINHAS VAGAS (profissional) -->
-    <div id="sec-minhas-vagas" class="section"></div>
-
-    <!-- PUBLICAR VAGA (contratante) -->
+    <div id="sec-inicio"        class="section active"></div>
+    <div id="sec-vagas"         class="section"></div>
+    <div id="sec-minhas-vagas"  class="section"></div>
     <div id="sec-publicar-vaga" class="section"></div>
-
-    <!-- EQUIPE FIXA (contratante) -->
-    <div id="sec-equipe" class="section"></div>
-
-    <!-- PERFIL -->
-    <div id="sec-perfil" class="section"></div>
-
-    <!-- ADMIN -->
-    <div id="sec-admin" class="section"></div>
-
+    <div id="sec-equipe"        class="section"></div>
+    <div id="sec-perfil"        class="section"></div>
+    <div id="sec-admin"         class="section"></div>
   </div>
 
-  <!-- Bottom Nav -->
   <nav class="bottom-nav"></nav>
 
 </div>
 
 <script type="module" src="app.js"></script>
+<script>
+  // Política de privacidade modal
+  function openPrivacy() { document.getElementById('modal-privacy').style.display='block'; }
+  document.addEventListener('click', e => {
+    if (e.target.id === 'btn-privacy' || e.target.id === 'btn-privacy2') openPrivacy();
+    if (e.target.id === 'btn-close-privacy') document.getElementById('modal-privacy').style.display='none';
+  });
+  // Bloquear zoom por duplo toque
+  let lastTouch = 0;
+  document.addEventListener('touchend', e => {
+    const now = Date.now();
+    if (now - lastTouch < 300) e.preventDefault();
+    lastTouch = now;
+  }, { passive: false });
+</script>
 </body>
 </html>

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <title>PONTE — Criar usuários demo</title>
+  <style>
+    body { font-family: monospace; background: #000; color: #0f0; padding: 20px; font-size: 14px; }
+    button { background: #cc472e; color: #fff; border: none; padding: 12px 24px; font-size: 16px; cursor: pointer; border-radius: 8px; margin: 10px 0; }
+    #log { white-space: pre-wrap; margin-top: 16px; }
+  </style>
+</head>
+<body>
+<h2>PONTE — Seed: Criar usuários demo</h2>
+<p>Clique abaixo para criar as contas de teste no Firebase.</p>
+<p><strong>Credenciais:</strong><br>
+  📧 pedrospadotto@icloud.com / 🔑 Ponte7777 → Profissional (Garçom)<br>
+  📧 pedrospadotto@icloud.com → também será admin (mude o role depois no Firestore)<br>
+  📧 estabelecimento@ponte.app / 🔑 Ponte7777 → Contratante (Restaurante)
+</p>
+<button onclick="runSeed()">▶ Criar usuários demo</button>
+<div id="log">Aguardando...</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, createUserWithEmailAndPassword, updateProfile } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getFirestore, doc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const config = {
+  apiKey: "AIzaSyDf-Ds8SbM0xLo8oYOqet3xqhBWZQ4buKw",
+  authDomain: "ponte-35c61.firebaseapp.com",
+  projectId: "ponte-35c61",
+  storageBucket: "ponte-35c61.firebasestorage.app",
+  messagingSenderId: "455720558425",
+  appId: "1:455720558425:web:891fdc50dc13a57dfef648"
+};
+
+const app  = initializeApp(config);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+const log = (msg) => { document.getElementById('log').textContent += '\n' + msg; };
+
+const USERS = [
+  {
+    email: 'pedrospadotto@icloud.com',
+    password: 'Ponte7777',
+    name: 'Pedro Spadotto',
+    role: 'professional',
+    phone: '(14) 99999-0001',
+    extra: { category: 'garcom', bio: 'Garçom com 5 anos de experiência em eventos e restaurantes.', city: 'Bauru' }
+  },
+  {
+    email: 'estabelecimento@ponte.app',
+    password: 'Ponte7777',
+    name: 'Igor Responsável',
+    role: 'employer',
+    phone: '(14) 99999-0002',
+    extra: { businessName: 'Espaço Gourmet Bauru', businessType: 'buffet', city: 'Bauru' }
+  },
+];
+
+window.runSeed = async () => {
+  log('Iniciando seed...');
+  for (const u of USERS) {
+    try {
+      const { user } = await createUserWithEmailAndPassword(auth, u.email, u.password);
+      await updateProfile(user, { displayName: u.name });
+      await setDoc(doc(db, 'users', user.uid), {
+        name: u.name, email: u.email, role: u.role,
+        phone: u.phone, photoURL: null,
+        createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+      });
+      if (u.role === 'professional') {
+        await setDoc(doc(db, 'professionals', user.uid), {
+          uid: user.uid, name: u.name,
+          category: u.extra.category, bio: u.extra.bio, city: u.extra.city,
+          level: 'PADRAO', totalEvents: 12, averageRating: 4.5, noShows: 0,
+          isAvailable: true,
+          ratings: { punctuality: 4.6, presentation: 4.4, technique: 4.5 },
+          createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+        });
+      } else {
+        await setDoc(doc(db, 'employers', user.uid), {
+          uid: user.uid, name: u.name,
+          businessName: u.extra.businessName, businessType: u.extra.businessType, city: u.extra.city,
+          fixedTeam: [], totalJobsPosted: 0,
+          createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+        });
+      }
+      log(`✅ Criado: ${u.email} (${u.role})`);
+    } catch (err) {
+      if (err.code === 'auth/email-already-in-use') {
+        log(`⚠️  Já existe: ${u.email} — tudo certo, conta já criada antes.`);
+      } else {
+        log(`❌ Erro em ${u.email}: ${err.message}`);
+      }
+    }
+  }
+  log('\n✅ Seed concluído!');
+  log('\n📌 Próximo passo: No Firestore Console, abra a coleção "users",');
+  log('   encontre o documento de pedrospadotto@icloud.com e mude "role" para "admin"');
+  log('   se quiser que ele seja admin também.');
+};
+</script>
+</body>
+</html>
