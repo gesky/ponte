@@ -793,9 +793,12 @@ async function loadProfile() {
         </form>
       </div>
 
-      <div class="card" style="padding:4px 8px">
+      <div class="card" style="padding:4px 8px;display:flex;flex-direction:column;gap:4px">
         <button class="btn btn-ghost btn-full" id="btn-logout-profile" style="color:var(--red);border-color:rgba(204,71,46,.3)">
           Sair da conta
+        </button>
+        <button class="btn btn-ghost btn-full" id="btn-delete-account" style="color:var(--muted);font-size:.78rem;border:none">
+          Excluir minha conta
         </button>
       </div>
     `;
@@ -836,6 +839,68 @@ async function loadProfile() {
 
     $('#btn-logout-profile').addEventListener('click', async () => {
       await logoutUser();
+    });
+
+    $('#btn-delete-account').addEventListener('click', () => {
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+      modal.innerHTML = `
+        <div class="modal-sheet">
+          <div class="modal-handle"></div>
+          <h3 style="margin-bottom:8px">Excluir conta</h3>
+          <p style="font-size:.84rem;color:var(--muted);margin-bottom:20px">
+            Essa ação é permanente e não pode ser desfeita. Todos os seus dados serão removidos.
+          </p>
+          <div class="field">
+            <label>Confirme sua senha para continuar</label>
+            <input id="confirm-pw" type="password" placeholder="••••••••" />
+          </div>
+          <div id="delete-error" class="alert alert-error" style="display:none;margin-top:10px"></div>
+          <div style="display:flex;gap:10px;margin-top:20px">
+            <button class="btn btn-ghost btn-full" id="btn-cancel-delete">Cancelar</button>
+            <button class="btn btn-full" id="btn-confirm-delete" style="background:#7a2020;color:var(--cream)">
+              Excluir conta
+            </button>
+          </div>
+        </div>`;
+      document.body.appendChild(modal);
+
+      $('#btn-cancel-delete', modal).addEventListener('click', () => modal.remove());
+
+      $('#btn-confirm-delete', modal).addEventListener('click', async () => {
+        const pw = $('#confirm-pw', modal).value;
+        if (!pw) {
+          $('#delete-error', modal).textContent = 'Digite sua senha para confirmar.';
+          $('#delete-error', modal).style.display = 'block';
+          return;
+        }
+        const btn = $('#btn-confirm-delete', modal);
+        btn.disabled = true; btn.textContent = '...';
+        try {
+          // Re-autenticar antes de deletar (exigido pelo Firebase)
+          const { EmailAuthProvider, reauthenticateWithCredential, deleteUser } =
+            await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+          const credential = EmailAuthProvider.credential(STATE.user.email, pw);
+          await reauthenticateWithCredential(STATE.user, credential);
+          // Deletar documentos do Firestore
+          const { deleteDoc, doc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+          await deleteDoc(doc(db, 'users', STATE.user.uid));
+          if (STATE.userData.role === 'professional') await deleteDoc(doc(db, 'professionals', STATE.user.uid)).catch(()=>{});
+          if (STATE.userData.role === 'employer')     await deleteDoc(doc(db, 'employers',     STATE.user.uid)).catch(()=>{});
+          // Deletar conta do Firebase Auth
+          await deleteUser(STATE.user);
+          modal.remove();
+        } catch (err) {
+          const msgs = {
+            'auth/wrong-password':     'Senha incorreta.',
+            'auth/invalid-credential': 'Senha incorreta.',
+            'auth/too-many-requests':  'Muitas tentativas. Aguarde um momento.',
+          };
+          $('#delete-error', modal).textContent = msgs[err.code] || 'Erro ao excluir. Tente novamente.';
+          $('#delete-error', modal).style.display = 'block';
+          btn.disabled = false; btn.textContent = 'Excluir conta';
+        }
+      });
     });
   } catch (err) {
     sec.innerHTML = errState('Erro ao carregar perfil.');
