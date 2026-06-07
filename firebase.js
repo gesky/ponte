@@ -134,16 +134,17 @@ export const getJob = async (id) => {
 export const updateJob = (id, data) =>
   updateDoc(doc(db, 'jobs', id), { ...data, updatedAt: serverTimestamp() });
 export const getOpenJobs = async (lim = 20) => {
-  const q = query(collection(db, 'jobs'), where('status','==','open'),
-    orderBy('createdAt','desc'), limit(lim));
+  const q = query(collection(db, 'jobs'), where('status','==','open'));
   const s = await getDocs(q);
-  return s.docs.map(d => ({ id: d.id, ...d.data() }));
+  return s.docs.map(d => ({ id: d.id, ...d.data() }))
+    .sort((a,b) => (b.createdAt?.toMillis?.()??0) - (a.createdAt?.toMillis?.()??0))
+    .slice(0, lim);
 };
 export const getJobsByEmployer = async (uid) => {
-  const q = query(collection(db, 'jobs'), where('employerUid','==',uid),
-    orderBy('createdAt','desc'));
+  const q = query(collection(db, 'jobs'), where('employerUid','==',uid));
   const s = await getDocs(q);
-  return s.docs.map(d => ({ id: d.id, ...d.data() }));
+  return s.docs.map(d => ({ id: d.id, ...d.data() }))
+    .sort((a,b) => (b.createdAt?.toMillis?.()??0) - (a.createdAt?.toMillis?.()??0));
 };
 
 // ─── APPLICATIONS ────────────────────────────────────────────
@@ -160,10 +161,10 @@ export const getApplicationsByJob = async (jobId) => {
   return s.docs.map(d => ({ id: d.id, ...d.data() }));
 };
 export const getApplicationsByProfessional = async (uid) => {
-  const q = query(collection(db, 'applications'), where('professionalUid','==',uid),
-    orderBy('createdAt','desc'));
+  const q = query(collection(db, 'applications'), where('professionalUid','==',uid));
   const s = await getDocs(q);
-  return s.docs.map(d => ({ id: d.id, ...d.data() }));
+  return s.docs.map(d => ({ id: d.id, ...d.data() }))
+    .sort((a,b) => (b.createdAt?.toMillis?.()??0) - (a.createdAt?.toMillis?.()??0));
 };
 export const updateApplication = (id, data) =>
   updateDoc(doc(db, 'applications', id), data);
@@ -211,10 +212,10 @@ export const createReview = async (data) => {
 };
 
 export const getReviewsByProfessional = async (uid) => {
-  const q = query(collection(db, 'reviews'), where('professionalUid','==',uid),
-    orderBy('createdAt','desc'));
+  const q = query(collection(db, 'reviews'), where('professionalUid','==',uid));
   const s = await getDocs(q);
-  return s.docs.map(d => ({ id: d.id, ...d.data() }));
+  return s.docs.map(d => ({ id: d.id, ...d.data() }))
+    .sort((a,b) => (b.createdAt?.toMillis?.()??0) - (a.createdAt?.toMillis?.()??0));
 };
 
 // Calcula nível com base em métricas (espelha a regra de gamificação)
