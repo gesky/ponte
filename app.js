@@ -748,12 +748,20 @@ async function loadProfile() {
   try {
     const role = STATE.userData.role;
     const u = STATE.userData;
-    const p = STATE.profile;
+    // Garante que o profile esteja carregado
+    let p = STATE.profile;
+    if (!p) {
+      if (role === 'professional') p = await getProfessional(STATE.user.uid);
+      else if (role === 'employer') p = await getEmployer(STATE.user.uid);
+      STATE.profile = p;
+    }
+    p = p || {};
 
     // Carrega avaliacoes recebidas (somente profissional)
     let reviews = [];
     if (role === 'professional') {
-      reviews = await getReviewsByProfessional(STATE.user.uid);
+      try { reviews = await getReviewsByProfessional(STATE.user.uid); }
+      catch (e) { console.warn('reviews falhou:', e); reviews = []; }
     }
 
     sec.innerHTML = `
@@ -957,7 +965,8 @@ async function loadProfile() {
       });
     });
   } catch (err) {
-    sec.innerHTML = errState('Erro ao carregar perfil.');
+    console.error('loadProfile error:', err);
+    sec.innerHTML = errState('Erro ao carregar perfil: ' + (err?.message || err));
   }
 }
 
