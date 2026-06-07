@@ -172,16 +172,103 @@ export const updateApplication = (id, data) =>
 
 export const createReview = async (data) => {
   const avg = (data.punctuality + data.presentation + data.technique) / 3;
-  return addDoc(collection(db, 'reviews'), {
-    ...data, average: Math.round(avg * 10) / 10,
+
+  // 1. Salva a avaliação
+  await addDoc(collection(db, 'reviews'), {
+    ...data,
+    average: Math.round(avg * 10) / 10,
     createdAt: serverTimestamp()
   });
+
+  // 2. Recalcula as métricas do profissional a partir de TODAS as avaliações
+  const profUid = data.professionalUid;
+  if (profUid) {
+    const reviews = await getReviewsByProfessional(profUid);
+    const n = reviews.length;
+    const sum = (key) => reviews.reduce((acc, r) => acc + (r[key] || 0), 0);
+
+    const avgPunctuality  = n ? sum('punctuality')  / n : 0;
+    const avgPresentation = n ? sum('presentation') / n : 0;
+    const avgTechnique    = n ? sum('technique')    / n : 0;
+    const overall = n ? (avgPunctuality + avgPresentation + avgTechnique) / 3 : 0;
+
+    const r1 = (v) => Math.round(v * 10) / 10;
+
+    // Recalcula o nível com base nas novas métricas
+    const newLevel = calcLevel({ totalEvents: n, averageRating: overall, technique: avgTechnique });
+
+    await updateProfessional(profUid, {
+      totalEvents: n,
+      averageRating: r1(overall),
+      level: newLevel,
+      ratings: {
+        punctuality:  r1(avgPunctuality),
+        presentation: r1(avgPresentation),
+        technique:    r1(avgTechnique),
+      },
+    });
+  }
 };
+
 export const getReviewsByProfessional = async (uid) => {
   const q = query(collection(db, 'reviews'), where('professionalUid','==',uid),
     orderBy('createdAt','desc'));
   const s = await getDocs(q);
   return s.docs.map(d => ({ id: d.id, ...d.data() }));
+};
+
+// Calcula nível com base em métricas (espelha a regra de gamificação)
+function calcLevel({ totalEvents = 0, averageRating = 0, technique = 0 }) {
+  if (averageRating >= 4.8 && technique >= 4.8) return 'ELITE';
+  if (totalEvents >= 40 && averageRating >= 4.6 && technique >= 4.5) return 'ESPECIALISTA';
+  if (totalEvents >= 15 && averageRating >= 4.3) return 'PADRAO';
+  return 'ACESSO';
+}
+
+// ─── CHAT ────────────────────────────────────────────────────
+// Estrutura: chats/{chatId}  +  chats/{chatId}/messages/{msgId}
+// chatId = `${jobId}_${professionalUid}` (único por vaga+profissional)
+
+export const getChatId = (jobId, profUid) => `${jobId}_${profUid}`;
+
+export const ensureChat = async (jobId, employerUid, profUid, meta = {}) => {
+  const chatId = getChatId(jobId, profUid);
+  const ref = doc(db, 'chats', chatId);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) {
+    await setDoc(ref, {
+      jobId, employerUid, professionalUid: profUid,
+      jobTitle: meta.jobTitle || '',
+      employerName: meta.employerName || '',
+      professionalName: meta.professionalName || '',
+      participants: [employerUid, profUid],
+      lastMessage: '',
+      lastMessageAt: serverTimestamp(),
+      createdAt: serverTimestamp(),
+    });
+  }
+  return chatId;
+};
+
+export const sendMessage = async (chatId, senderUid, text) => {
+  await addDoc(collection(db, 'chats', chatId, 'messages'), {
+    senderUid, text, createdAt: serverTimestamp(),
+  });
+  await updateDoc(doc(db, 'chats', chatId), {
+    lastMessage: text, lastMessageAt: serverTimestamp(),
+  });
+};
+
+export const listenMessages = (chatId, cb) => {
+  const q = query(collection(db, 'chats', chatId, 'messages'), orderBy('createdAt','asc'));
+  return onSnapshot(q, snap => cb(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+};
+
+export const getChatsForUser = async (uid) => {
+  const q = query(collection(db, 'chats'), where('participants','array-contains',uid));
+  const s = await getDocs(q);
+  return s.docs.map(d => ({ id: d.id, ...d.data() }))
+    .sort((a,b) => (b.lastMessageAt?.toMillis?.()??0) - (a.lastMessageAt?.toMillis?.()??0));
 };
 
 // ─── ADMIN ───────────────────────────────────────────────────

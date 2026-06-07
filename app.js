@@ -11,6 +11,8 @@ import {
   createJob, getJob, updateJob, getOpenJobs, getJobsByEmployer,
   applyToJob, getApplicationsByJob, getApplicationsByProfessional, updateApplication,
   createReview,
+  ensureChat, sendMessage, listenMessages, getChatId,
+  getReviewsByProfessional,
   getAdminStats, listenCollection,
   LEVELS, CATEGORIES, BUSINESS_TYPES,
   getCategoryIcon, getCategoryLabel, fmtDate,
@@ -84,7 +86,6 @@ function showApp(section) {
   STATE.activeSection = section;
   ({
     inicio: loadHome, vagas: loadJobs,
-    'minhas-vagas': loadMyApplications,
     'publicar-vaga': loadPublishJob,
     equipe: loadTeam, perfil: loadProfile, admin: loadAdmin,
   })[section]?.();
@@ -119,8 +120,7 @@ onAuthChange(async (user) => {
 const NAVS = {
   professional: [
     { sec:'inicio',        icon:`<svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>`,        label:'Início' },
-    { sec:'vagas',         icon:`<svg viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27A6.5 6.5 0 1 0 14 15.5l.27.28v.79l5 5-1.5 1.5-5-5zm-6 0C7 14 5 12 5 9.5S7 5 9.5 5 14 7 14 9.5 12 14 9.5 14z"/></svg>`, label:'Vagas' },
-    { sec:'minhas-vagas',  icon:`<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>`, label:'Agenda' },
+    { sec:'vagas',         icon:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>`, label:'Vagas' },
     { sec:'perfil',        icon:`<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>`, label:'Perfil' },
   ],
   employer: [
@@ -215,12 +215,16 @@ async function renderProfHome() {
   const sec = $('#sec-inicio');
   sec.innerHTML = loader();
   try {
-    const [prof, jobs] = await Promise.all([
-      getProfessional(STATE.user.uid),
-      getOpenJobs(5),
-    ]);
+    const prof = await getProfessional(STATE.user.uid);
     STATE.profile = prof;
-    const lvl = LEVELS[prof?.level || 'ACESSO'];
+
+    // Busca candidaturas do profissional (a "agenda")
+    const apps = await getApplicationsByProfessional(STATE.user.uid);
+    const jobsData = apps.length ? await Promise.all(apps.map(a => getJob(a.jobId))) : [];
+    const jobMap = Object.fromEntries(jobsData.filter(Boolean).map(j=>[j.id,j]));
+
+    const sColors = { pending:'var(--muted)', accepted:'var(--yellow)', rejected:'#e06060' };
+    const sLabels = { pending:'Aguardando', accepted:'Confirmado ✓', rejected:'Recusado' };
 
     sec.innerHTML = `
       <div class="home-header">
@@ -243,19 +247,25 @@ async function renderProfHome() {
         </div>
       </div>
 
-      <div class="stats-grid">
-        ${statCard('🎪', prof?.totalEvents||0, 'Eventos')}
-        ${statCard('⭐', prof?.averageRating ? prof.averageRating.toFixed(1) : '—', 'Média')}
-        ${statCard(lvl.label.split(' ')[0], lvl.label.replace(/^[^ ]+ /,''), 'Nível', true)}
-      </div>
-
       <div>
         <div class="sec-header">
-          <h3>Vagas disponíveis</h3>
-          <button class="see-all" id="btn-see-all">Ver todas →</button>
+          <h3>Minha agenda</h3>
+          <button class="see-all" id="btn-see-all">Buscar vagas →</button>
         </div>
         <div class="jobs-stack" id="home-jobs">
-          ${jobs.length ? jobs.map(j => jobCardHTML(j)).join('') : emptyState('📭','Nenhuma vaga agora','Volte mais tarde.')}
+          ${apps.length ? apps.map(a => {
+            const j = jobMap[a.jobId]; if (!j) return '';
+            return `<button class="job-card" data-id="${j.id}">
+              <div class="job-card-left">
+                <span class="job-icon">${getCategoryIcon(j.category)}</span>
+                <div>
+                  <p class="job-title">${j.title}</p>
+                  <p class="job-meta">${j.businessName||''} · ${j.date?new Date(j.date).toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}):'—'}</p>
+                </div>
+              </div>
+              <span style="font-size:.75rem;font-weight:700;color:${sColors[a.status]}">${sLabels[a.status]}</span>
+            </button>`;
+          }).join('') : emptyState('📋','Nenhuma candidatura ainda','Busque vagas e candidate-se.',`<button class="btn btn-primary btn-sm" id="empty-go-vagas">Ver vagas</button>`)}
         </div>
       </div>
     `;
@@ -267,6 +277,7 @@ async function renderProfHome() {
       toast(v ? 'Você está disponível!' : 'Invisível no momento.');
     });
     $('#btn-see-all').addEventListener('click', () => showApp('vagas'));
+    $('#empty-go-vagas')?.addEventListener('click', () => showApp('vagas'));
     $$('.job-card', sec).forEach(c => c.addEventListener('click', () => openJobDetail(c.dataset.id)));
   } catch (err) {
     sec.innerHTML = errState('Erro ao carregar. Verifique conexão.');
@@ -396,9 +407,11 @@ async function openJobDetail(jobId) {
     const role = STATE.userData.role;
     let alreadyApplied = false, applications = [];
 
+    let isConfirmedPro = false;
     if (role === 'professional') {
       const apps = await getApplicationsByProfessional(STATE.user.uid);
       alreadyApplied = apps.some(a => a.jobId === jobId);
+      isConfirmedPro = job.confirmedProfessional === STATE.user.uid;
     } else {
       applications = await getApplicationsByJob(jobId);
     }
@@ -427,7 +440,10 @@ async function openJobDetail(jobId) {
         ${job.description ? `<p class="detail-desc">${job.description}</p>` : ''}
       </div>
 
-      ${role==='professional' ? `
+      ${role==='professional' && isConfirmedPro ? `
+        <div class="alert alert-success">🎉 Você foi confirmado para esta vaga!</div>
+        <button class="btn btn-primary btn-full btn-lg" id="btn-chat-pro">💬 Conversar com o estabelecimento</button>
+      ` : role==='professional' ? `
         <button class="btn ${alreadyApplied?'btn-ghost':'btn-primary'} btn-full btn-lg" id="btn-apply"
           ${alreadyApplied||job.status!=='open' ? 'disabled' : ''}>
           ${alreadyApplied ? '✓ Candidatura enviada' : job.status!=='open' ? 'Vaga encerrada' : 'Me candidatar'}
@@ -439,16 +455,18 @@ async function openJobDetail(jobId) {
           <h3 style="margin-bottom:10px">Candidatos (${applications.length})</h3>
           <div class="jobs-stack">
             ${applications.map(a=>`
-              <div class="applicant-row">
+              <div class="applicant-row ${a.status==='accepted'?'applicant-confirmed':''}" ${a.status==='accepted'?`data-chat-prof="${a.professionalUid}" data-chat-name="${a.professionalName}"`:''}>
                 <div>
                   <p style="font-weight:600;font-size:.9rem">${a.professionalName}</p>
-                  <p style="font-size:.72rem;color:var(--muted)">${fmtDate(a.createdAt)}</p>
+                  <p style="font-size:.72rem;color:var(--muted)">${a.status==='accepted'?'Toque para conversar 💬':fmtDate(a.createdAt)}</p>
                 </div>
-                <div style="display:flex;gap:6px">
+                <div style="display:flex;gap:6px;align-items:center">
                   ${a.status==='pending' ? `
-                    <button class="btn btn-sm btn-green" data-app="${a.id}" data-action="accept">Confirmar</button>
+                    <button class="btn btn-sm btn-green" data-app="${a.id}" data-prof="${a.professionalUid}" data-name="${a.professionalName}" data-action="accept">Confirmar</button>
                     <button class="btn btn-sm btn-ghost" data-app="${a.id}" data-action="reject">Recusar</button>
-                  ` : `<span class="status-pill ${a.status==='accepted'?'status-filled':'status-cancelled'}">${a.status==='accepted'?'Confirmado':'Recusado'}</span>`}
+                  ` : a.status==='accepted'
+                    ? `<span class="status-pill status-filled">Confirmado</span>`
+                    : `<span class="status-pill status-cancelled">Recusado</span>`}
                 </div>
               </div>
             `).join('')}
@@ -461,6 +479,9 @@ async function openJobDetail(jobId) {
       ` : ''}
       ${role==='employer' && job.status==='completed' && !job.reviewed ? `
         <button class="btn btn-primary btn-full" id="btn-review">Avaliar profissional</button>
+      ` : ''}
+      ${role==='employer' && job.reviewed ? `
+        <div class="alert alert-success">✓ Profissional já avaliado</div>
       ` : ''}
     `;
 
@@ -478,13 +499,44 @@ async function openJobDetail(jobId) {
       $('#btn-apply').textContent = '✓ Candidatura enviada';
       toast('Candidatura enviada!');
     });
+    $('#btn-chat-pro')?.addEventListener('click', () => {
+      openChat(jobId, job.employerUid, STATE.user.uid, {
+        jobTitle: job.title,
+        employerName: job.businessName,
+        professionalName: STATE.userData.name,
+        otherName: job.businessName,
+      });
+    });
+    // Confirmar / recusar candidato
     $$('[data-action]', container).forEach(btn => {
       btn.addEventListener('click', async () => {
         const accepted = btn.dataset.action === 'accept';
         await updateApplication(btn.dataset.app, { status: accepted?'accepted':'rejected' });
-        if (accepted) await updateJob(jobId, { status:'filled' });
+        if (accepted) {
+          await updateJob(jobId, {
+            status: 'filled',
+            confirmedProfessional: btn.dataset.prof,
+            confirmedProfessionalName: btn.dataset.name,
+          });
+          await ensureChat(jobId, STATE.user.uid, btn.dataset.prof, {
+            jobTitle: job.title,
+            employerName: STATE.profile?.businessName || STATE.userData.name,
+            professionalName: btn.dataset.name,
+          });
+        }
         toast(accepted ? 'Profissional confirmado!' : 'Candidatura recusada.');
         openJobDetail(jobId);
+      });
+    });
+    // Tocar no candidato confirmado abre o chat
+    $$('.applicant-confirmed', container).forEach(row => {
+      row.addEventListener('click', () => {
+        openChat(jobId, STATE.user.uid, row.dataset.chatProf, {
+          jobTitle: job.title,
+          employerName: STATE.profile?.businessName || STATE.userData.name,
+          professionalName: row.dataset.chatName,
+          otherName: row.dataset.chatName,
+        });
       });
     });
     $('#btn-complete')?.addEventListener('click', async () => {
@@ -499,41 +551,6 @@ async function openJobDetail(jobId) {
   }
 }
 
-// ─── MY APPLICATIONS ─────────────────────────────────────────
-async function loadMyApplications() {
-  const sec = $('#sec-minhas-vagas');
-  sec.innerHTML = loader();
-  try {
-    const apps = await getApplicationsByProfessional(STATE.user.uid);
-    if (!apps.length) {
-      sec.innerHTML = `<h2>Agenda</h2>${emptyState('📋','Nenhuma candidatura ainda','Explore as vagas e candidate-se.',`<button class="btn btn-primary" id="go-vagas">Ver vagas</button>`)}`;
-      $('#go-vagas').addEventListener('click', () => showApp('vagas'));
-      return;
-    }
-    const jobsData = await Promise.all(apps.map(a => getJob(a.jobId)));
-    const jobMap = Object.fromEntries(jobsData.filter(Boolean).map(j=>[j.id,j]));
-    const sColors = { pending:'var(--muted)', accepted:'var(--yellow)', rejected:'#e06060' };
-    const sLabels = { pending:'Aguardando', accepted:'Confirmado ✓', rejected:'Recusado' };
-    sec.innerHTML = `
-      <h2>Agenda</h2>
-      <div class="jobs-stack">
-        ${apps.map(a => {
-          const j = jobMap[a.jobId]; if (!j) return '';
-          return `<button class="job-card" data-id="${j.id}">
-            <div class="job-card-left">
-              <span class="job-icon">${getCategoryIcon(j.category)}</span>
-              <div>
-                <p class="job-title">${j.title}</p>
-                <p class="job-meta">${j.businessName||''} · ${j.date?new Date(j.date).toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}):'—'}</p>
-              </div>
-            </div>
-            <span style="font-size:.75rem;font-weight:700;color:${sColors[a.status]}">${sLabels[a.status]}</span>
-          </button>`;
-        }).join('')}
-      </div>`;
-    $$('.job-card', sec).forEach(c=>c.addEventListener('click',()=>openJobDetail(c.dataset.id)));
-  } catch { sec.innerHTML = `<h2>Agenda</h2>${errState('Erro ao carregar.')}`; }
-}
 
 // ─── PUBLISH JOB ─────────────────────────────────────────────
 function loadPublishJob() {
@@ -733,6 +750,12 @@ async function loadProfile() {
     const u = STATE.userData;
     const p = STATE.profile;
 
+    // Carrega avaliacoes recebidas (somente profissional)
+    let reviews = [];
+    if (role === 'professional') {
+      reviews = await getReviewsByProfessional(STATE.user.uid);
+    }
+
     sec.innerHTML = `
       <h2>Perfil</h2>
 
@@ -768,10 +791,34 @@ async function loadProfile() {
               </div>`).join('')}
           </div>
         </div>
+
+        <div class="card">
+          <h3 style="margin-bottom:14px">Avaliações recebidas ${reviews.length?`(${reviews.length})`:''}</h3>
+          ${reviews.length ? `<div style="display:flex;flex-direction:column;gap:12px">
+            ${reviews.map(r=>`
+              <div class="review-item">
+                <div class="review-item-top">
+                  <span class="review-stars">${'★'.repeat(Math.round(r.average))}${'☆'.repeat(5-Math.round(r.average))}</span>
+                  <span class="review-avg">${r.average?.toFixed(1)||'—'}</span>
+                </div>
+                ${r.comment?`<p class="review-comment">"${r.comment}"</p>`:''}
+                <div class="review-pilares">
+                  <span>Pontual. ${r.punctuality}</span>
+                  <span>Apres. ${r.presentation}</span>
+                  <span>Técnica ${r.technique}</span>
+                </div>
+                <p class="review-date">${fmtDate(r.createdAt)}</p>
+              </div>`).join('')}
+          </div>` : `<p style="font-size:.82rem;color:var(--muted)">Você ainda não recebeu avaliações. Elas aparecerão aqui após concluir eventos.</p>`}
+        </div>
       ` : ''}
 
-      <div class="card">
-        <h3 style="margin-bottom:16px">Editar dados</h3>
+      <button class="btn btn-ghost btn-full" id="btn-toggle-edit" style="justify-content:space-between">
+        <span>✏️ Editar dados</span>
+        <span id="edit-chevron">▾</span>
+      </button>
+
+      <div class="card" id="edit-card" style="display:none">
         <form id="form-profile" class="form-stack">
           <div class="field"><label>Nome</label>
             <input id="prf-name" value="${u.name||''}" required /></div>
@@ -819,6 +866,13 @@ async function loadProfile() {
         wrap.style.opacity = '1';
         toast('Foto atualizada!');
       } catch { wrap.style.opacity='1'; toast('Erro ao enviar foto.','red'); }
+    });
+
+    $('#btn-toggle-edit').addEventListener('click', () => {
+      const card = $('#edit-card');
+      const open = card.style.display === 'none';
+      card.style.display = open ? 'block' : 'none';
+      $('#edit-chevron').textContent = open ? '▴' : '▾';
     });
 
     $('#form-profile').addEventListener('submit', async (e) => {
@@ -985,6 +1039,78 @@ function emptyState(icon,title,desc='',action='') {
 }
 function statCard(icon,val,lbl,hl=false) {
   return `<div class="stat-card ${hl?'hl':''}"><span class="stat-icon">${icon}</span><span class="stat-val">${val}</span><span class="stat-lbl">${lbl}</span></div>`;
+}
+
+// ─── CHAT UI ─────────────────────────────────────────────────
+let _unsubChat = null;
+function openChat(jobId, employerUid, profUid, meta = {}) {
+  const chatId = getChatId(jobId, profUid);
+  const otherName = meta.otherName || 'Conversa';
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay chat-overlay';
+  modal.innerHTML = `
+    <div class="chat-sheet">
+      <div class="chat-header">
+        <button class="chat-close" id="chat-close">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        </button>
+        <div class="chat-header-info">
+          <p class="chat-header-name">${otherName}</p>
+          <p class="chat-header-sub">${meta.jobTitle || ''}</p>
+        </div>
+      </div>
+      <div class="chat-messages" id="chat-messages">
+        <div class="loading-center"><div class="spinner"></div></div>
+      </div>
+      <form class="chat-input-bar" id="chat-form">
+        <input id="chat-input" placeholder="Escreva uma mensagem..." autocomplete="off" />
+        <button type="submit" class="chat-send" aria-label="Enviar">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </button>
+      </form>
+    </div>`;
+  document.body.appendChild(modal);
+
+  const close = async () => {
+    if (_unsubChat) { _unsubChat(); _unsubChat = null; }
+    modal.remove();
+  };
+  $('#chat-close', modal).addEventListener('click', close);
+
+  // Garante que o chat existe e começa a escutar mensagens
+  (async () => {
+    await ensureChat(jobId, employerUid, profUid, meta);
+    const box = $('#chat-messages', modal);
+    _unsubChat = listenMessages(chatId, (msgs) => {
+      if (!msgs.length) {
+        box.innerHTML = `<div class="chat-empty">Nenhuma mensagem ainda.<br>Combine os detalhes do evento por aqui.</div>`;
+        return;
+      }
+      box.innerHTML = msgs.map(m => {
+        const mine = m.senderUid === STATE.user.uid;
+        const time = m.createdAt?.toDate ? m.createdAt.toDate().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '';
+        return `<div class="chat-bubble ${mine?'mine':'theirs'}">
+          <span class="chat-text">${escapeHtml(m.text)}</span>
+          <span class="chat-time">${time}</span>
+        </div>`;
+      }).join('');
+      box.scrollTop = box.scrollHeight;
+    });
+  })();
+
+  $('#chat-form', modal).addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const input = $('#chat-input', modal);
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    await sendMessage(chatId, STATE.user.uid, text);
+  });
+}
+
+function escapeHtml(s='') {
+  return s.replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 }
 
 // ─── ERROR MESSAGES ───────────────────────────────────────────

@@ -2,37 +2,37 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Usuário autenticado pode ler/escrever seu próprio documento
     match /users/{uid} {
       allow read: if request.auth != null;
       allow write, delete: if request.auth.uid == uid;
     }
-
     match /professionals/{uid} {
       allow read: if request.auth != null;
-      allow write, delete: if request.auth.uid == uid;
+      // o proprio profissional OU qualquer autenticado (p/ atualizar metricas via review)
+      allow write, delete: if request.auth != null;
     }
-
     match /employers/{uid} {
       allow read: if request.auth != null;
       allow write, delete: if request.auth.uid == uid;
     }
-
     match /jobs/{jobId} {
       allow read: if request.auth != null;
-      allow create: if request.auth != null;
-      allow update: if request.auth != null;
+      allow create, update: if request.auth != null;
     }
-
     match /applications/{appId} {
       allow read: if request.auth != null;
-      allow create: if request.auth != null;
-      allow update: if request.auth != null;
+      allow create, update: if request.auth != null;
     }
-
     match /reviews/{reviewId} {
       allow read: if request.auth != null;
       allow create: if request.auth != null;
+    }
+    // Chat: documento + subcoleção de mensagens
+    match /chats/{chatId} {
+      allow read, create, update: if request.auth != null;
+      match /messages/{msgId} {
+        allow read, create: if request.auth != null;
+      }
     }
   }
 }
