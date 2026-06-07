@@ -215,12 +215,17 @@ async function renderProfHome() {
   const sec = $('#sec-inicio');
   sec.innerHTML = loader();
   try {
-    const prof = await getProfessional(STATE.user.uid);
+    // Busca perfil e candidaturas em paralelo
+    const [prof, apps] = await Promise.all([
+      getProfessional(STATE.user.uid),
+      getApplicationsByProfessional(STATE.user.uid).catch(e => { console.warn('apps:', e); return []; }),
+    ]);
     STATE.profile = prof;
 
-    // Busca candidaturas do profissional (a "agenda")
-    const apps = await getApplicationsByProfessional(STATE.user.uid);
-    const jobsData = apps.length ? await Promise.all(apps.map(a => getJob(a.jobId))) : [];
+    // Busca cada vaga de forma tolerante a falha (vaga deletada nao trava o app)
+    const jobsData = apps.length
+      ? await Promise.all(apps.map(a => getJob(a.jobId).catch(() => null)))
+      : [];
     const jobMap = Object.fromEntries(jobsData.filter(Boolean).map(j=>[j.id,j]));
 
     const sColors = { pending:'var(--muted)', accepted:'var(--yellow)', rejected:'#e06060' };
@@ -411,7 +416,9 @@ async function openJobDetail(jobId) {
     if (role === 'professional') {
       const apps = await getApplicationsByProfessional(STATE.user.uid);
       alreadyApplied = apps.some(a => a.jobId === jobId);
-      isConfirmedPro = job.confirmedProfessional === STATE.user.uid;
+      const myApp = apps.find(a => a.jobId === jobId);
+      isConfirmedPro = job.confirmedProfessional === STATE.user.uid
+                    || myApp?.status === 'accepted';
     } else {
       applications = await getApplicationsByJob(jobId);
     }
