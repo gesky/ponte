@@ -32,6 +32,10 @@ export const storage = getStorage(app);
 // ─── AUTH ────────────────────────────────────────────────────
 
 export const registerUser = async (email, password, name, role, extra = {}) => {
+  if (!role || !['professional','employer','admin'].includes(role))
+    throw new Error('Selecione o tipo de conta antes de continuar.');
+  if (!name || !email)
+    throw new Error('Nome e e-mail sao obrigatorios.');
   const { user } = await createUserWithEmailAndPassword(auth, email, password);
   await updateProfile(user, { displayName: name });
   await setDoc(doc(db, 'users', user.uid), {

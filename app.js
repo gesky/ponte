@@ -92,23 +92,37 @@ function showApp(section) {
 }
 
 // ─── AUTH OBSERVER ───────────────────────────────────────────
+let _authBusy = false;
 onAuthChange(async (user) => {
+  if (_authBusy) return;
   if (user) {
+    _authBusy = true;
     STATE.user = user;
     try {
       STATE.userData = await getUser(user.uid);
-      if (!STATE.userData) { await logoutUser(); return; }
+      if (!STATE.userData) {
+        // Documento ainda nao existe — pode ser cadastro recem criado, tenta de novo em 1s
+        await new Promise(r => setTimeout(r, 1000));
+        STATE.userData = await getUser(user.uid);
+      }
+      if (!STATE.userData) {
+        _authBusy = false;
+        toast('Conta nao encontrada. Tente fazer login novamente.', 'red');
+        await logoutUser();
+        return;
+      }
       const role = STATE.userData.role;
-      if (role === 'professional') STATE.profile = await getProfessional(user.uid);
-      else if (role === 'employer') STATE.profile = await getEmployer(user.uid);
+      if (role === 'professional') STATE.profile = await getProfessional(user.uid).catch(() => null);
+      else if (role === 'employer') STATE.profile = await getEmployer(user.uid).catch(() => null);
       buildNav(role);
       if (role === 'admin') showApp('admin');
       else showApp('inicio');
     } catch (err) {
       console.error('Auth error:', err);
-      // Firestore rules might be blocking — show error instead of eternal loader
       showAuthPage('page-login');
-      toast('Erro ao carregar conta. Verifique as regras do Firestore.', 'red');
+      toast('Erro ao carregar conta: ' + (err && err.message ? err.message : err), 'red');
+    } finally {
+      _authBusy = false;
     }
   } else {
     STATE.user = STATE.userData = STATE.profile = null;
@@ -155,7 +169,7 @@ $('#form-login').addEventListener('submit', async (e) => {
     btn.disabled = false; btn.textContent = 'Entrar';
   }
 });
-$('#link-to-register').addEventListener('click', (e) => { e.preventDefault(); showAuthPage('page-register'); });
+$('#link-to-register').addEventListener('click', (e) => { e.preventDefault(); resetRegister(); showAuthPage('page-register'); });
 $('#link-forgot').addEventListener('click', async () => {
   const email = $('#login-email').value.trim();
   if (!email) { toast('Digite seu e-mail primeiro', 'red'); return; }
@@ -164,44 +178,90 @@ $('#link-forgot').addEventListener('click', async () => {
 });
 
 // ─── REGISTER ────────────────────────────────────────────────
-$('#link-to-login').addEventListener('click', (e) => { e.preventDefault(); showAuthPage('page-login'); });
+$('#link-to-login').addEventListener('click', (e) => { e.preventDefault(); resetRegister(); showAuthPage('page-login'); });
 
 let selectedRole = null;
+
+function resetRegister() {
+  selectedRole = null;
+  $('#reg-step1').style.display = 'flex';
+  $('#form-register').style.display = 'none';
+  $('#form-register').reset();
+  $('#reg-error').style.display = 'none';
+  $('#reg-fields-professional').style.display = 'none';
+  $('#reg-fields-employer').style.display = 'none';
+  const btn = $('#btn-register');
+  btn.disabled = false;
+  btn.textContent = 'Criar conta';
+}
+
 $$('.role-card').forEach(btn => {
   btn.addEventListener('click', () => {
     selectedRole = btn.dataset.role;
     $('#reg-step1').style.display = 'none';
     $('#form-register').style.display = 'flex';
+    $('#reg-error').style.display = 'none';
     $('#reg-fields-professional').style.display = selectedRole === 'professional' ? 'flex' : 'none';
     $('#reg-fields-employer').style.display     = selectedRole === 'employer'     ? 'flex' : 'none';
   });
 });
+
 $('#btn-reg-back').addEventListener('click', () => {
-  $('#reg-step1').style.display = 'flex';
-  $('#form-register').style.display = 'none';
+  resetRegister();
 });
+
 $('#form-register').addEventListener('submit', async (e) => {
   e.preventDefault();
+  $('#reg-error').style.display = 'none';
+
+  // Garante que um role foi selecionado
+  if (!selectedRole) {
+    showRegError('Selecione o tipo de conta antes de continuar.');
+    return;
+  }
+
+  const name  = $('#reg-name').value.trim();
+  const email = $('#reg-email').value.trim();
+  const pw    = $('#reg-pw').value;
+  const pw2   = $('#reg-pw2').value;
+  const phone = $('#reg-phone').value.trim();
+
+  if (!name)  { showRegError('Digite seu nome.'); return; }
+  if (!email) { showRegError('Digite seu e-mail.'); return; }
+  if (!phone) { showRegError('Digite seu WhatsApp.'); return; }
+  if (pw !== pw2) { showRegError('As senhas não coincidem.'); return; }
+  if (pw.length < 6) { showRegError('A senha deve ter pelo menos 6 caracteres.'); return; }
+
+  if (selectedRole === 'professional' && !$('#reg-category')?.value) {
+    showRegError('Selecione sua especialidade.'); return;
+  }
+
   const btn = $('#btn-register');
-  const pw = $('#reg-pw').value, pw2 = $('#reg-pw2').value;
-  if (pw !== pw2) { showRegError('Senhas não coincidem.'); return; }
-  if (pw.length < 6) { showRegError('Senha mínima: 6 caracteres.'); return; }
-  btn.disabled = true; btn.textContent = '...';
+  btn.disabled = true;
+  btn.textContent = 'Criando conta...';
+
   try {
-    await registerUser($('#reg-email').value.trim(), pw, $('#reg-name').value.trim(), selectedRole, {
-      phone: $('#reg-phone').value,
-      category: $('#reg-category')?.value,
-      businessName: $('#reg-business-name')?.value,
-      businessType: $('#reg-business-type')?.value,
+    await registerUser(email, pw, name, selectedRole, {
+      phone,
+      category:     $('#reg-category')?.value     || null,
+      businessName: $('#reg-business-name')?.value || null,
+      businessType: $('#reg-business-type')?.value || null,
     });
+    // onAuthChange cuida do redirect — apenas garante estado limpo
+    resetRegister();
   } catch (err) {
-    showRegError(friendlyErr(err.code));
-    btn.disabled = false; btn.textContent = 'Criar conta';
+    console.error('Register error:', err);
+    showRegError(friendlyErr(err.code) + (err.code ? '' : ': ' + err.message));
+    btn.disabled = false;
+    btn.textContent = 'Criar conta';
   }
 });
+
 function showRegError(msg) {
   const el = $('#reg-error');
-  el.textContent = msg; el.style.display = 'block';
+  el.textContent = msg;
+  el.style.display = 'block';
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 // ─── HOME ────────────────────────────────────────────────────
