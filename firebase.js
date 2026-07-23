@@ -38,8 +38,21 @@ export const registerUser = async (email, password, name, role, extra = {}) => {
     throw new Error('Nome e e-mail sao obrigatorios.');
   const { user } = await createUserWithEmailAndPassword(auth, email, password);
   await updateProfile(user, { displayName: name });
+  const phoneCleaned = (extra.phone || '').replace(/\D/g, '');
   await setDoc(doc(db, 'users', user.uid), {
-    name, email, role, phone: extra.phone || null, photoURL: null,
+    name, email, role,
+    phone: extra.phone || null,
+    phoneCleaned: phoneCleaned || null,
+    photoURL: null,
+    address: {
+      cep:        extra.cep        || null,
+      logradouro: extra.logradouro || null,
+      numero:     extra.numero     || null,
+      complemento:extra.complemento|| null,
+      bairro:     extra.bairro     || null,
+      cidade:     extra.cidade     || 'Bauru',
+      estado:     extra.estado     || 'SP',
+    },
     createdAt: serverTimestamp(), updatedAt: serverTimestamp()
   });
   if (role === 'professional') {
@@ -91,6 +104,17 @@ export const getUser = async (uid) => {
   const s = await getDoc(doc(db, 'users', uid));
   return s.exists() ? { id: s.id, ...s.data() } : null;
 };
+export const checkPhoneExists = async (phone, role) => {
+  // Verifica se o telefone ja esta cadastrado para o mesmo tipo de conta
+  // Usa apenas um where para nao precisar de indice composto
+  const cleaned = phone.replace(/\D/g, '');
+  if (!cleaned) return false;
+  const q = query(collection(db, 'users'), where('phoneCleaned', '==', cleaned));
+  const snap = await getDocs(q);
+  // Filtra pelo role no JS
+  return snap.docs.some(d => d.data().role === role);
+};
+
 export const updateUser = (uid, data) =>
   updateDoc(doc(db, 'users', uid), { ...data, updatedAt: serverTimestamp() });
 

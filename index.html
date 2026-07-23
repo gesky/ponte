@@ -143,8 +143,50 @@
         </div>
         <div class="field">
           <label>WhatsApp</label>
-          <input id="reg-phone" type="tel" placeholder="(14) 99999-9999" required />
+          <input id="reg-phone" type="tel" placeholder="(14) 99999-9999" required autocomplete="tel" />
         </div>
+
+        <!-- Endereço com auto-complete por CEP -->
+        <div class="form-row">
+          <div class="field">
+            <label>CEP</label>
+            <input id="reg-cep" type="tel" placeholder="17000-000" maxlength="9" />
+          </div>
+          <div class="field" style="align-self:flex-end">
+            <button type="button" class="btn btn-ghost btn-sm btn-full" id="btn-buscar-cep">Buscar CEP</button>
+          </div>
+        </div>
+        <div id="reg-address-fields" style="display:none;flex-direction:column;gap:12px">
+          <div class="field">
+            <label>Rua / Avenida</label>
+            <input id="reg-logradouro" placeholder="Rua das Flores" />
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label>Número</label>
+              <input id="reg-numero" placeholder="123" />
+            </div>
+            <div class="field">
+              <label>Complemento</label>
+              <input id="reg-complemento" placeholder="Apto 4" />
+            </div>
+          </div>
+          <div class="field">
+            <label>Bairro</label>
+            <input id="reg-bairro" placeholder="Centro" />
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label>Cidade</label>
+              <input id="reg-cidade" placeholder="Bauru" value="Bauru" />
+            </div>
+            <div class="field">
+              <label>Estado</label>
+              <input id="reg-estado" placeholder="SP" value="SP" maxlength="2" style="text-transform:uppercase" />
+            </div>
+          </div>
+        </div>
+
         <div class="field">
           <label>E-mail</label>
           <input id="reg-email" type="email" placeholder="seu@email.com" required />

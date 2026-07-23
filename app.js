@@ -5,7 +5,7 @@
 import {
   auth, db, storage,
   registerUser, loginUser, logoutUser, resetPw, onAuthChange,
-  getUser, updateUser, uploadProfilePhoto,
+  getUser, updateUser, updateUser as updateUserDoc, uploadProfilePhoto, checkPhoneExists,
   getProfessional, updateProfessional,
   getEmployer, updateEmployer,
   createJob, getJob, updateJob, getOpenJobs, getJobsByEmployer,
@@ -195,6 +195,41 @@ function resetRegister() {
   btn.textContent = 'Criar conta';
 }
 
+// CEP auto-complete via ViaCEP
+async function buscarCEP() {
+  const cepInput = $('#reg-cep');
+  const cep = cepInput.value.replace(/\D/g, '');
+  if (cep.length !== 8) { toast('CEP deve ter 8 digitos.', 'red'); return; }
+
+  const btn = $('#btn-buscar-cep');
+  btn.disabled = true; btn.textContent = 'Buscando...';
+
+  try {
+    const res  = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+    const data = await res.json();
+    if (data.erro) {
+      toast('CEP nao encontrado.', 'red');
+    } else {
+      // Formata CEP
+      cepInput.value = cep.replace(/(\d{5})(\d{3})/, '$1-$2');
+      // Preenche campos
+      const fields = $('#reg-address-fields');
+      fields.style.display = 'flex';
+      $('#reg-logradouro').value = data.logradouro || '';
+      $('#reg-bairro').value     = data.bairro     || '';
+      $('#reg-cidade').value     = data.localidade  || 'Bauru';
+      $('#reg-estado').value     = data.uf          || 'SP';
+      // Foca no numero
+      setTimeout(() => $('#reg-numero')?.focus(), 100);
+    }
+  } catch {
+    toast('Erro ao buscar CEP. Preencha o endereco manualmente.', 'red');
+    $('#reg-address-fields').style.display = 'flex';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Buscar CEP';
+  }
+}
+
 $$('.role-card').forEach(btn => {
   btn.addEventListener('click', () => {
     selectedRole = btn.dataset.role;
@@ -204,6 +239,18 @@ $$('.role-card').forEach(btn => {
     $('#reg-fields-professional').style.display = selectedRole === 'professional' ? 'flex' : 'none';
     $('#reg-fields-employer').style.display     = selectedRole === 'employer'     ? 'flex' : 'none';
   });
+});
+
+// CEP button click
+document.addEventListener('click', e => {
+  if (e.target && e.target.id === 'btn-buscar-cep') buscarCEP();
+});
+// CEP input: auto-busca quando digitar 8 digitos
+document.addEventListener('input', e => {
+  if (e.target && e.target.id === 'reg-cep') {
+    const digits = e.target.value.replace(/\D/g, '');
+    if (digits.length === 8) buscarCEP();
+  }
 });
 
 $('#btn-reg-back').addEventListener('click', () => {
@@ -229,7 +276,7 @@ $('#form-register').addEventListener('submit', async (e) => {
   if (!name)  { showRegError('Digite seu nome.'); return; }
   if (!email) { showRegError('Digite seu e-mail.'); return; }
   if (!phone) { showRegError('Digite seu WhatsApp.'); return; }
-  if (pw !== pw2) { showRegError('As senhas não coincidem.'); return; }
+  if (pw !== pw2) { showRegError('As senhas nao coincidem.'); return; }
   if (pw.length < 6) { showRegError('A senha deve ter pelo menos 6 caracteres.'); return; }
 
   if (selectedRole === 'professional' && !$('#reg-category')?.value) {
@@ -238,20 +285,36 @@ $('#form-register').addEventListener('submit', async (e) => {
 
   const btn = $('#btn-register');
   btn.disabled = true;
-  btn.textContent = 'Criando conta...';
+  btn.textContent = 'Verificando...';
 
   try {
+    // Verifica celular duplicado para o mesmo tipo de conta
+    const phoneExists = await checkPhoneExists(phone, selectedRole);
+    if (phoneExists) {
+      const tipo = selectedRole === 'professional' ? 'freela' : 'estabelecimento';
+      showRegError(`Este celular ja esta cadastrado como ${tipo}. Use outro numero ou faca login.`);
+      btn.disabled = false; btn.textContent = 'Criar conta';
+      return;
+    }
+
+    btn.textContent = 'Criando conta...';
     await registerUser(email, pw, name, selectedRole, {
       phone,
-      category:     $('#reg-category')?.value     || null,
-      businessName: $('#reg-business-name')?.value || null,
-      businessType: $('#reg-business-type')?.value || null,
+      category:     $('#reg-category')?.value      || null,
+      businessName: $('#reg-business-name')?.value  || null,
+      businessType: $('#reg-business-type')?.value  || null,
+      cep:         $('#reg-cep')?.value             || null,
+      logradouro:  $('#reg-logradouro')?.value      || null,
+      numero:      $('#reg-numero')?.value          || null,
+      complemento: $('#reg-complemento')?.value     || null,
+      bairro:      $('#reg-bairro')?.value          || null,
+      cidade:      $('#reg-cidade')?.value          || 'Bauru',
+      estado:      $('#reg-estado')?.value          || 'SP',
     });
-    // onAuthChange cuida do redirect — apenas garante estado limpo
     resetRegister();
   } catch (err) {
     console.error('Register error:', err);
-    showRegError(friendlyErr(err.code) + (err.code ? '' : ': ' + err.message));
+    showRegError(friendlyErr(err.code) || err.message || 'Erro ao criar conta.');
     btn.disabled = false;
     btn.textContent = 'Criar conta';
   }
