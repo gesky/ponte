@@ -247,10 +247,18 @@
     /* Ícone gastronomia flutuando */
     .float-icon {
       position: absolute;
+      z-index: 10;
       animation: float 4s ease-in-out infinite;
+      /* fundo escuro com blur pra destacar sobre a foto */
+      background: rgba(0,2,1,.55);
+      backdrop-filter: blur(8px);
+      border-radius: 50%;
+      width: 64px; height: 64px;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid rgba(247,230,193,.12);
     }
     .float-icon:nth-child(1) { top: -20px; right: -20px; animation-delay: 0s; }
-    .float-icon:nth-child(2) { bottom: 20px; left: -24px; animation-delay: 1.5s; }
+    .float-icon:nth-child(2) { bottom: 32px; left: -24px; animation-delay: 1.5s; }
     @keyframes float {
       0%,100% { transform: translateY(0) rotate(0deg); }
       50%      { transform: translateY(-10px) rotate(4deg); }
@@ -782,17 +790,22 @@
       max-width: 460px;
       aspect-ratio: 3/4;
       border-radius: 24px;
-      overflow: hidden;
+      overflow: visible; /* permite ícones vazarem pras bordas */
       position: relative;
       box-shadow: 0 40px 80px rgba(0,0,0,.55);
     }
-    /* Vinheta sutil nas bordas para integrar com o fundo escuro */
-    .hero-img-wrap::after {
+    /* Clip apenas na foto, não nos ícones */
+    .hero-img {
+      border-radius: 24px;
+    }
+    /* Vinheta sutil */
+    .hero-img-wrap::before {
       content: '';
       position: absolute; inset: 0;
       border-radius: 24px;
       box-shadow: inset 0 0 60px rgba(0,2,1,.35);
       pointer-events: none;
+      z-index: 1;
     }
     .hero-img {
       width: 100%; height: 100%;
@@ -876,26 +889,14 @@
 
     <div class="hero-visual">
       <div class="hero-logo-wrap">
-        <!-- Ícone gastronomia flutuante -->
-        <div class="float-icon">
-          <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
-            <!-- Coqueteleira -->
-            <rect x="18" y="6" width="16" height="4" rx="2" stroke="#f3bb45" stroke-width="2"/>
-            <path d="M15 10 L37 10 L33 42 L19 42 Z" stroke="#f3bb45" stroke-width="2" fill="none"/>
-            <line x1="15" y1="18" x2="37" y2="18" stroke="#f3bb45" stroke-width="2"/>
-          </svg>
-        </div>
-        <div class="float-icon">
-          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-            <!-- Torneira de chope -->
-            <path d="M24 8 L24 20" stroke="#cc472e" stroke-width="2.5" stroke-linecap="round"/>
-            <ellipse cx="24" cy="22" rx="8" ry="4" stroke="#cc472e" stroke-width="2" fill="none"/>
-            <path d="M16 22 L16 36 C16 38.2 17.8 40 20 40 L28 40 C30.2 40 32 38.2 32 36 L32 22" stroke="#cc472e" stroke-width="2" fill="none"/>
-            <path d="M32 28 L38 28 L38 32 L32 32" stroke="#cc472e" stroke-width="2" fill="none"/>
-          </svg>
-        </div>
-
         <div class="hero-img-wrap">
+          <!-- Ícones da identidade PONTE flutuando sobre a foto -->
+          <div class="float-icon">
+            <img src="Asset_1.svg" alt="" width="52" height="52" style="width:52px;height:auto" />
+          </div>
+          <div class="float-icon">
+            <img src="Asset_2.svg" alt="" width="48" height="48" style="width:48px;height:auto" />
+          </div>
           <img src="barman.webp" alt="Bartender finalizando um drinque" class="hero-img" />
         </div>
       </div>
