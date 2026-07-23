@@ -5,7 +5,7 @@
 import {
   auth, db, storage,
   registerUser, loginUser, logoutUser, resetPw, onAuthChange,
-  getUser, updateUser, updateUser as updateUserDoc, uploadProfilePhoto, checkPhoneExists,
+  getUser, updateUser, uploadProfilePhoto, removeProfilePhoto, checkPhoneExists,
   getProfessional, updateProfessional,
   getEmployer, updateEmployer,
   createJob, getJob, updateJob, getOpenJobs, getJobsByEmployer,
@@ -406,6 +406,15 @@ async function renderProfHome() {
     });
     $('#btn-see-all').addEventListener('click', () => showApp('vagas'));
     $('#empty-go-vagas')?.addEventListener('click', () => showApp('vagas'));
+    // Avatar no header: toque para ver foto
+    $$('.profile-avatar, .profile-avatar img', sec).forEach(el => {
+      el.style.cursor = 'pointer';
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (STATE.userData.photoURL) viewPhoto(STATE.userData.photoURL, STATE.userData.name);
+        else showApp('perfil');
+      });
+    });
     $$('.job-card', sec).forEach(c => c.addEventListener('click', () => openJobDetail(c.dataset.id)));
   } catch (err) {
     sec.innerHTML = errState('Erro ao carregar. Verifique conexão.');
@@ -544,6 +553,14 @@ async function openJobDetail(jobId) {
                     || myApp?.status === 'accepted';
     } else {
       applications = await getApplicationsByJob(jobId);
+      // Busca foto de cada candidato
+      const profDocs = await Promise.all(
+        applications.map(a => getUser(a.professionalUid).catch(() => null))
+      );
+      applications = applications.map((a, i) => ({
+        ...a,
+        photoURL: profDocs[i]?.photoURL || null,
+      }));
     }
 
     container.innerHTML = `
@@ -586,9 +603,15 @@ async function openJobDetail(jobId) {
           <div class="jobs-stack">
             ${applications.map(a=>`
               <div class="applicant-row ${a.status==='accepted'?'applicant-confirmed':''}" ${a.status==='accepted'?`data-chat-prof="${a.professionalUid}" data-chat-name="${a.professionalName}"`:''}>
-                <div>
-                  <p style="font-weight:600;font-size:.9rem">${a.professionalName}</p>
-                  <p style="font-size:.72rem;color:var(--muted)">${a.status==='accepted'?'Toque para conversar 💬':fmtDate(a.createdAt)}</p>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <div class="mini-avatar ${a.photoURL?'has-photo':''}"
+                    data-photo="${a.photoURL||''}" data-name="${a.professionalName}"
+                    style="${a.photoURL?`background-image:url('${a.photoURL}')`:''}"
+                  >${a.photoURL?'':a.professionalName[0].toUpperCase()}</div>
+                  <div>
+                    <p style="font-weight:600;font-size:.9rem">${a.professionalName}</p>
+                    <p style="font-size:.72rem;color:var(--muted)">${a.status==='accepted'?'Toque para conversar 💬':fmtDate(a.createdAt)}</p>
+                  </div>
                 </div>
                 <div style="display:flex;gap:6px;align-items:center">
                   ${a.status==='pending' ? `
@@ -658,6 +681,15 @@ async function openJobDetail(jobId) {
         openJobDetail(jobId);
       });
     });
+    // Mini avatar: tocar abre foto em tela cheia
+    $$('.mini-avatar.has-photo', container).forEach(av => {
+      av.style.cursor = 'pointer';
+      av.addEventListener('click', (e) => {
+        e.stopPropagation();
+        viewPhoto(av.dataset.photo, av.dataset.name);
+      });
+    });
+
     // Tocar no candidato confirmado abre o chat
     $$('.applicant-confirmed', container).forEach(row => {
       row.addEventListener('click', () => {
@@ -907,7 +939,6 @@ async function loadProfile() {
           <p class="profile-role">${role==='professional' ? getCategoryLabel(p?.category) : p?.businessName||''}</p>
           ${role==='professional' ? lvlBadge(p?.level||'ACESSO') : ''}
         </div>
-        <input type="file" id="photo-input" accept="image/*" style="display:none" />
       </div>
 
       ${role==='professional' ? `
@@ -988,23 +1019,85 @@ async function loadProfile() {
       </div>
     `;
 
-    // Foto de perfil
+    // ── Foto de perfil ──
     const avatarWrap = $('#avatar-wrap');
-    avatarWrap.style.cursor = 'pointer';
-    avatarWrap.addEventListener('click', () => $('#photo-input').click());
-    $('#photo-input').addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const wrap = $('#avatar-wrap');
-      wrap.style.opacity = '.5';
-      try {
-        const url = await uploadProfilePhoto(STATE.user.uid, file);
-        STATE.userData.photoURL = url;
-        wrap.innerHTML = `${avatarHTML(STATE.userData,72)}<div class="avatar-edit-badge">📷</div>`;
-        wrap.style.opacity = '1';
-        toast('Foto atualizada!');
-      } catch { wrap.style.opacity='1'; toast('Erro ao enviar foto.','red'); }
+
+    // Toque na imagem: se tem foto mostra lightbox, se nao tem abre upload
+    avatarWrap.addEventListener('click', () => {
+      if (STATE.userData.photoURL) {
+        // Mostra menu: ver / trocar / remover
+        openPhotoMenu(u);
+      } else {
+        startPhotoUpload();
+      }
     });
+
+    async function startPhotoUpload() {
+      const wrap = $('#avatar-wrap');
+      if (!wrap) return;
+      const badge = wrap.querySelector('.avatar-edit-badge');
+      if (badge) badge.textContent = '⏳';
+      wrap.style.opacity = '.6';
+
+      const url = await handlePhotoUpload(STATE.user.uid, (msg) => {
+        toast(msg);
+      });
+
+      if (url) {
+        STATE.userData.photoURL = url;
+        if (wrap) {
+          wrap.innerHTML = avatarHTML(STATE.userData, 72) + '<div class="avatar-edit-badge">📷</div>';
+        }
+        toast('Foto atualizada!');
+      } else {
+        if (wrap) {
+          wrap.style.opacity = '1';
+          const b = wrap.querySelector('.avatar-edit-badge');
+          if (b) b.textContent = '📷';
+        }
+      }
+      if (wrap) wrap.style.opacity = '1';
+    }
+
+    function openPhotoMenu(userData) {
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+      modal.innerHTML = `
+        <div class="modal-sheet">
+          <div class="modal-handle"></div>
+          <p style="text-align:center;font-weight:700;margin-bottom:16px">Foto de perfil</p>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <button class="btn btn-ghost btn-full" id="pmv-view">👁 Ver foto</button>
+            <button class="btn btn-ghost btn-full" id="pmv-change">📷 Trocar foto</button>
+            <button class="btn btn-ghost btn-full" id="pmv-remove" style="color:#e06060;border-color:rgba(224,96,96,.3)">🗑 Remover foto</button>
+            <button class="btn btn-ghost btn-full" id="pmv-cancel">Cancelar</button>
+          </div>
+        </div>`;
+      document.body.appendChild(modal);
+
+      $('#pmv-cancel', modal).addEventListener('click', () => modal.remove());
+      $('#pmv-view',   modal).addEventListener('click', () => {
+        modal.remove();
+        viewPhoto(userData.photoURL, userData.name);
+      });
+      $('#pmv-change', modal).addEventListener('click', () => {
+        modal.remove();
+        startPhotoUpload();
+      });
+      $('#pmv-remove', modal).addEventListener('click', async () => {
+        modal.remove();
+        const wrap = $('#avatar-wrap');
+        if (wrap) wrap.style.opacity = '.5';
+        toast('Removendo foto...');
+        await removeProfilePhoto(STATE.user.uid);
+        STATE.userData.photoURL = null;
+        if (wrap) {
+          wrap.innerHTML = avatarHTML(STATE.userData, 72) + '<div class="avatar-edit-badge">📷</div>';
+          wrap.style.opacity = '1';
+        }
+        toast('Foto removida.');
+      });
+    }
 
     $('#btn-toggle-edit').addEventListener('click', () => {
       const card = $('#edit-card');
@@ -1245,6 +1338,98 @@ function openChat(jobId, employerUid, profUid, meta = {}) {
     if (!text) return;
     input.value = '';
     await sendMessage(chatId, STATE.user.uid, text);
+  });
+}
+
+
+// ─── IMAGE UTILS ──────────────────────────────────────────────
+
+/**
+ * Converte um File/Blob de imagem para WebP usando Canvas.
+ * maxSize: dimensão máxima (largura ou altura) em pixels.
+ * quality: 0-1, onde 0.8 = 80%.
+ */
+function imageToWebP(file, maxSize = 400, quality = 0.8) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      // Calcula dimensões mantendo proporção
+      let w = img.width, h = img.height;
+      if (w > h && w > maxSize) { h = Math.round(h * maxSize / w); w = maxSize; }
+      else if (h > maxSize)     { w = Math.round(w * maxSize / h); h = maxSize; }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+
+      canvas.toBlob(blob => {
+        if (blob) resolve(blob);
+        else reject(new Error('Falha ao converter imagem.'));
+      }, 'image/webp', quality);
+    };
+    img.onerror = () => reject(new Error('Imagem invalida.'));
+    img.src = url;
+  });
+}
+
+/**
+ * Abre um lightbox simples para visualizar uma foto em tela cheia.
+ */
+function viewPhoto(url, name = '') {
+  if (!url) return;
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `
+    position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:99999;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:20px;cursor:pointer;
+  `;
+  overlay.innerHTML = `
+    <img src="${url}" alt="${escapeHtml(name)}"
+      style="max-width:100%;max-height:80vh;border-radius:12px;object-fit:contain;box-shadow:0 8px 40px rgba(0,0,0,.6)">
+    ${name ? `<p style="color:#fff;margin-top:14px;font-family:var(--font);font-size:.9rem;opacity:.7">${escapeHtml(name)}</p>` : ''}
+    <button style="position:absolute;top:calc(env(safe-area-inset-top)+16px);right:16px;
+      background:rgba(255,255,255,.15);border:none;border-radius:50%;width:36px;height:36px;
+      cursor:pointer;color:#fff;font-size:1.2rem;display:flex;align-items:center;justify-content:center">✕</button>
+  `;
+  overlay.addEventListener('click', () => overlay.remove());
+  document.body.appendChild(overlay);
+}
+
+/**
+ * Abre o seletor de arquivo, converte para WebP e faz upload.
+ * Retorna a URL pública ou null se cancelado.
+ */
+async function handlePhotoUpload(uid, onProgress) {
+  return new Promise((resolve) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.style.display = 'none';
+    document.body.appendChild(input);
+
+    input.addEventListener('change', async () => {
+      const file = input.files[0];
+      document.body.removeChild(input);
+      if (!file) { resolve(null); return; }
+
+      try {
+        onProgress?.('Convertendo...');
+        const webpBlob = await imageToWebP(file, 400, 0.8);
+        onProgress?.('Enviando...');
+        const url = await uploadProfilePhoto(uid, webpBlob);
+        resolve(url);
+      } catch (err) {
+        console.error('Photo upload error:', err);
+        toast('Erro ao enviar foto: ' + (err.message || err), 'red');
+        resolve(null);
+      }
+    });
+
+    // iOS/Safari: must append before click
+    setTimeout(() => input.click(), 50);
   });
 }
 

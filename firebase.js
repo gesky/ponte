@@ -90,12 +90,25 @@ export const onAuthChange = (cb)        => onAuthStateChanged(auth, cb);
 
 // ─── PHOTO UPLOAD ─────────────────────────────────────────────
 
-export const uploadProfilePhoto = async (uid, file) => {
-  const storageRef = ref(storage, `profile_photos/${uid}`);
-  await uploadBytes(storageRef, file);
+/**
+ * Recebe um Blob (preferencialmente WebP ja convertido no frontend)
+ * e faz upload para o Storage, atualizando o campo photoURL no Firestore.
+ */
+export const uploadProfilePhoto = async (uid, blob) => {
+  const storageRef = ref(storage, `profile_photos/${uid}.webp`);
+  await uploadBytes(storageRef, blob, { contentType: 'image/webp' });
   const url = await getDownloadURL(storageRef);
-  await updateUser(uid, { photoURL: url });
+  await updateDoc(doc(db, 'users', uid), { photoURL: url, updatedAt: serverTimestamp() });
   return url;
+};
+
+export const removeProfilePhoto = async (uid) => {
+  // Remove do Storage (ignora erro se nao existir)
+  try {
+    const { deleteObject } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js');
+    await deleteObject(ref(storage, `profile_photos/${uid}.webp`));
+  } catch (_) {}
+  await updateDoc(doc(db, 'users', uid), { photoURL: null, updatedAt: serverTimestamp() });
 };
 
 // ─── USERS ───────────────────────────────────────────────────

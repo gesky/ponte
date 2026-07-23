@@ -711,3 +711,29 @@ p { opacity: .8; line-height: 1.6; }
   display: flex; align-items: center; justify-content: center; color: var(--cream);
 }
 .chat-send:active { transform: scale(.94); }
+
+/* ── MINI AVATAR (candidatos, equipe, etc) ───────────────── */
+.mini-avatar {
+  width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+  background: var(--red); color: var(--cream);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: .95rem;
+  border: 2px solid var(--border);
+  transition: opacity .15s;
+}
+.mini-avatar.has-photo {
+  background-size: cover; background-position: center;
+  font-size: 0; /* esconde a letra quando tem foto */
+}
+.mini-avatar:hover { opacity: .85; }
+
+/* ── AVATAR EDIT BADGE ───────────────────────────────────── */
+.avatar-edit-badge {
+  position: absolute; bottom: 0; right: 0;
+  background: var(--surface-2); border: 1.5px solid var(--border);
+  border-radius: 50%; width: 24px; height: 24px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .75rem; pointer-events: none;
+}
+.profile-avatar-wrap { cursor: pointer; }
+.profile-avatar-wrap:active { opacity: .75; }
