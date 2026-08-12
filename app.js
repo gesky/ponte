@@ -5,7 +5,7 @@
 import {
   auth, db, storage,
   registerUser, loginUser, logoutUser, resetPw, onAuthChange,
-  getUser, updateUser, uploadProfilePhoto, removeProfilePhoto, checkPhoneExists,
+  getUser, updateUser, uploadProfilePhoto, removeProfilePhoto,
   getProfessional, updateProfessional,
   getEmployer, updateEmployer,
   createJob, getJob, updateJob, getOpenJobs, getJobsByEmployer,
@@ -288,15 +288,6 @@ $('#form-register').addEventListener('submit', async (e) => {
   btn.textContent = 'Verificando...';
 
   try {
-    // Verifica celular duplicado para o mesmo tipo de conta
-    const phoneExists = await checkPhoneExists(phone, selectedRole);
-    if (phoneExists) {
-      const tipo = selectedRole === 'professional' ? 'freela' : 'estabelecimento';
-      showRegError(`Este celular ja esta cadastrado como ${tipo}. Use outro numero ou faca login.`);
-      btn.disabled = false; btn.textContent = 'Criar conta';
-      return;
-    }
-
     btn.textContent = 'Criando conta...';
     await registerUser(email, pw, name, selectedRole, {
       phone,
@@ -314,7 +305,9 @@ $('#form-register').addEventListener('submit', async (e) => {
     resetRegister();
   } catch (err) {
     console.error('Register error:', err);
-    showRegError(friendlyErr(err.code) || err.message || 'Erro ao criar conta.');
+    const msg = friendlyErr(err.code) || err.message || 'Erro ao criar conta. Tente novamente.';
+    console.error('Register error:', err);
+    showRegError(msg);
     btn.disabled = false;
     btn.textContent = 'Criar conta';
   }

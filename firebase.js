@@ -36,52 +36,58 @@ export const registerUser = async (email, password, name, role, extra = {}) => {
     throw new Error('Selecione o tipo de conta antes de continuar.');
   if (!name || !email)
     throw new Error('Nome e e-mail sao obrigatorios.');
+
   const { user } = await createUserWithEmailAndPassword(auth, email, password);
   await updateProfile(user, { displayName: name });
-  const phoneCleaned = (extra.phone || '').replace(/\D/g, '');
-  await setDoc(doc(db, 'users', user.uid), {
-    name, email, role,
-    phone: extra.phone || null,
-    phoneCleaned: phoneCleaned || null,
-    photoURL: null,
-    address: {
-      cep:        extra.cep        || null,
-      logradouro: extra.logradouro || null,
-      numero:     extra.numero     || null,
-      complemento:extra.complemento|| null,
-      bairro:     extra.bairro     || null,
-      cidade:     extra.cidade     || 'Bauru',
-      estado:     extra.estado     || 'SP',
-    },
-    createdAt: serverTimestamp(), updatedAt: serverTimestamp()
-  });
-  if (role === 'professional') {
-    await setDoc(doc(db, 'professionals', user.uid), {
-      uid: user.uid, name,
-      category: extra.category || null,
-      bio: extra.bio || '',
-      city: 'Bauru',
-      level: 'ACESSO',
-      totalEvents: 0,
-      averageRating: 0,
-      noShows: 0,
-      isAvailable: false,
-      ratings: { punctuality: 0, presentation: 0, technique: 0 },
+
+  try {
+    const phoneCleaned = (extra.phone || '').replace(/\D/g, '');
+    await setDoc(doc(db, 'users', user.uid), {
+      name, email, role,
+      phone: extra.phone || null,
+      phoneCleaned: phoneCleaned || null,
+      photoURL: null,
+      address: {
+        cep:         extra.cep         || null,
+        logradouro:  extra.logradouro  || null,
+        numero:      extra.numero      || null,
+        complemento: extra.complemento || null,
+        bairro:      extra.bairro      || null,
+        cidade:      extra.cidade      || 'Bauru',
+        estado:      extra.estado      || 'SP',
+      },
       createdAt: serverTimestamp(), updatedAt: serverTimestamp()
     });
-  } else if (role === 'employer') {
-    await setDoc(doc(db, 'employers', user.uid), {
-      uid: user.uid, name,
-      businessName: extra.businessName || '',
-      businessType: extra.businessType || '',
-      city: 'Bauru',
-      fixedTeam: [],
-      totalJobsPosted: 0,
-      createdAt: serverTimestamp(), updatedAt: serverTimestamp()
-    });
+    if (role === 'professional') {
+      await setDoc(doc(db, 'professionals', user.uid), {
+        uid: user.uid, name,
+        category: extra.category || null,
+        bio: extra.bio || '',
+        city: extra.cidade || 'Bauru',
+        level: 'ACESSO',
+        totalEvents: 0, averageRating: 0, noShows: 0, isAvailable: false,
+        ratings: { punctuality: 0, presentation: 0, technique: 0 },
+        createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+      });
+    } else if (role === 'employer') {
+      await setDoc(doc(db, 'employers', user.uid), {
+        uid: user.uid, name,
+        businessName: extra.businessName || '',
+        businessType: extra.businessType || '',
+        city: extra.cidade || 'Bauru',
+        fixedTeam: [], totalJobsPosted: 0,
+        createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+      });
+    }
+  } catch (firestoreErr) {
+    // Rollback: apaga conta Auth para nao deixar usuario sem documento
+    console.error('Firestore error, rolling back:', firestoreErr);
+    try { await user.delete(); } catch (_) {}
+    throw new Error('Erro ao salvar dados. Tente novamente.');
   }
   return user;
 };
+
 
 export const loginUser    = (email, pw) => signInWithEmailAndPassword(auth, email, pw);
 export const logoutUser   = ()          => signOut(auth);
