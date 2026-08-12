@@ -1,10 +1,94 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Qualquer usuario autenticado pode ler e escrever
-    // Suficiente para MVP — restringir apos crescimento
+
+    // ── Funções auxiliares ────────────────────────────────────
+    function isAuth()  { return request.auth != null; }
+    function isOwner(uid) { return request.auth.uid == uid; }
+    function isAdmin() {
+      return isAuth() &&
+        request.auth.token.email in [
+          'pedrospadotto@icloud.com',
+          'igor@ponte.app'  // substitua pelo e-mail real do Igor
+        ];
+    }
+
+    // ── Usuários ──────────────────────────────────────────────
+    match /users/{uid} {
+      // Qualquer autenticado pode ler (necessário para buscar nome em candidaturas)
+      allow read: if isAuth();
+      // Só o próprio usuário edita seus dados — ou admin
+      allow create: if isAuth() && isOwner(uid);
+      allow update: if isOwner(uid) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ── Profissionais ─────────────────────────────────────────
+    match /professionals/{uid} {
+      allow read: if isAuth();
+      allow create: if isAuth() && isOwner(uid);
+      // Atualização: próprio profissional OU qualquer autenticado
+      // (necessário para atualizar métricas via avaliação)
+      allow update: if isAuth();
+      allow delete: if isAdmin();
+    }
+
+    // ── Contratantes ──────────────────────────────────────────
+    match /employers/{uid} {
+      allow read: if isAuth();
+      allow create: if isAuth() && isOwner(uid);
+      allow update: if isOwner(uid) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ── Vagas ─────────────────────────────────────────────────
+    match /jobs/{jobId} {
+      allow read: if isAuth();
+      // Só contratantes criam vagas (verificado pelo role no Firestore)
+      allow create: if isAuth();
+      // Só o dono da vaga ou admin atualiza
+      allow update: if isAuth() &&
+        (resource.data.employerUid == request.auth.uid || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    // ── Candidaturas ──────────────────────────────────────────
+    match /applications/{appId} {
+      allow read: if isAuth();
+      allow create: if isAuth();
+      // Só o profissional que candidatou ou o contratante da vaga atualiza
+      allow update: if isAuth();
+      allow delete: if isAdmin();
+    }
+
+    // ── Avaliações ────────────────────────────────────────────
+    match /reviews/{reviewId} {
+      allow read: if isAuth();
+      // Só quem criou pode avaliar — e apenas uma vez (sem update)
+      allow create: if isAuth();
+      allow update, delete: if isAdmin();
+    }
+
+    // ── Chats ─────────────────────────────────────────────────
+    match /chats/{chatId} {
+      // Só participantes da conversa leem
+      allow read: if isAuth() &&
+        request.auth.uid in resource.data.participants;
+      allow create: if isAuth();
+      allow update: if isAuth() &&
+        request.auth.uid in resource.data.participants;
+      allow delete: if isAdmin();
+
+      match /messages/{msgId} {
+        allow read: if isAuth();
+        allow create: if isAuth();
+        allow delete: if isAdmin();
+      }
+    }
+
+    // ── Bloqueia tudo mais ────────────────────────────────────
     match /{document=**} {
-      allow read, write: if request.auth != null;
+      allow read, write: if isAdmin();
     }
   }
 }

@@ -1,0 +1,1432 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="robots" content="noindex, nofollow"/>
+  <title>PONTE — Admin</title>
+  <link href="https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --ink:    #000201;
+      --cream:  #f7e6c1;
+      --red:    #cc472e;
+      --amber:  #f3bb45;
+      --green:  #385c37;
+      --surface:  #0d0f0d;
+      --surface2: #161916;
+      --border:   #1f221f;
+      --muted:    #4a524a;
+      --font: 'Clash Display', sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 15px; }
+    body {
+      font-family: var(--font);
+      background: var(--ink);
+      color: var(--cream);
+      min-height: 100vh;
+    }
+    a { color: inherit; text-decoration: none; }
+    ::selection { background: var(--red); color: var(--cream); }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: var(--ink); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+    /* ── LOGIN ── */
+    #login-screen {
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(204,71,46,.1) 0%, transparent 70%);
+    }
+    .login-box {
+      width: 100%; max-width: 380px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 40px 36px;
+    }
+    .login-logo {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 32px;
+    }
+    .login-logo svg { width: 40px; }
+    .login-title { font-size: 1rem; font-weight: 700; letter-spacing: .08em; }
+    .login-sub   { font-size: .72rem; color: var(--muted); margin-top: 1px; }
+    .login-badge {
+      display: inline-block;
+      background: rgba(243,187,69,.12); color: var(--amber);
+      border: 1px solid rgba(243,187,69,.3);
+      padding: 3px 10px; border-radius: 99px;
+      font-size: .65rem; font-weight: 700; letter-spacing: .1em;
+      text-transform: uppercase; margin-bottom: 24px;
+    }
+    .field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+    .field label {
+      font-size: .68rem; font-weight: 700; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    .field input {
+      padding: 11px 14px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 10px; color: var(--cream);
+      font-family: var(--font); font-size: .88rem; outline: none;
+    }
+    .field input:focus { border-color: var(--red); box-shadow: 0 0 0 2px rgba(204,71,46,.15); }
+    .btn-login {
+      width: 100%; padding: 13px;
+      background: var(--red); color: var(--cream);
+      border: none; border-radius: 10px; cursor: pointer;
+      font-family: var(--font); font-size: .9rem; font-weight: 700;
+      transition: opacity .15s;
+    }
+    .btn-login:hover { opacity: .85; }
+    .btn-login:disabled { opacity: .4; cursor: not-allowed; }
+    #login-error {
+      background: rgba(204,71,46,.12); border: 1px solid rgba(204,71,46,.3);
+      color: #e08080; padding: 10px 14px; border-radius: 8px;
+      font-size: .8rem; margin-bottom: 14px; display: none;
+    }
+
+    /* ── APP SHELL ── */
+    #app { display: none; min-height: 100vh; flex-direction: column; }
+    #app.active { display: flex; }
+
+    /* SIDEBAR */
+    .sidebar {
+      position: fixed; top: 0; left: 0; bottom: 0;
+      width: 220px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      z-index: 100;
+    }
+    .sidebar-logo {
+      padding: 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .sidebar-logo svg { width: 32px; }
+    .sidebar-logo-text { font-size: .88rem; font-weight: 700; letter-spacing: .06em; }
+    .sidebar-badge {
+      font-size: .58rem; background: rgba(243,187,69,.15);
+      color: var(--amber); border: 1px solid rgba(243,187,69,.3);
+      padding: 2px 7px; border-radius: 99px; letter-spacing: .08em;
+      text-transform: uppercase; margin-top: 1px;
+    }
+    .sidebar-nav { flex: 1; padding: 16px 12px; display: flex; flex-direction: column; gap: 2px; }
+    .nav-link {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 12px; border-radius: 8px; cursor: pointer;
+      font-size: .82rem; font-weight: 500; color: var(--muted);
+      transition: all .15s; border: none; background: none;
+      font-family: var(--font); text-align: left; width: 100%;
+    }
+    .nav-link:hover { background: var(--surface2); color: var(--cream); }
+    .nav-link.active { background: rgba(204,71,46,.12); color: var(--red); }
+    .nav-link svg { width: 16px; height: 16px; flex-shrink: 0; }
+    .nav-section-label {
+      font-size: .62rem; color: var(--muted); letter-spacing: .1em;
+      text-transform: uppercase; padding: 12px 12px 4px;
+    }
+    .sidebar-footer {
+      padding: 14px 16px;
+      border-top: 1px solid var(--border);
+      font-size: .72rem; color: var(--muted);
+    }
+    .sidebar-user { font-weight: 600; color: var(--cream); margin-bottom: 6px; font-size: .78rem; }
+    .btn-logout {
+      background: none; border: 1px solid var(--border); color: var(--muted);
+      padding: 6px 12px; border-radius: 6px; cursor: pointer;
+      font-family: var(--font); font-size: .72rem; width: 100%;
+      transition: all .15s;
+    }
+    .btn-logout:hover { border-color: var(--red); color: var(--red); }
+
+    /* MAIN CONTENT */
+    .main {
+      margin-left: 220px;
+      padding: 32px 36px;
+      flex: 1;
+      min-height: 100vh;
+    }
+    .page { display: none; flex-direction: column; gap: 24px; }
+    .page.active { display: flex; }
+
+    /* PAGE HEADER */
+    .page-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      flex-wrap: wrap; gap: 12px;
+    }
+    .page-title { font-size: 1.4rem; font-weight: 700; color: var(--cream); }
+    .page-sub { font-size: .78rem; color: var(--muted); margin-top: 3px; }
+
+    /* METRICS */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 14px;
+    }
+    .metric-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px 16px;
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .metric-icon { font-size: 1.3rem; }
+    .metric-val {
+      font-size: 2rem; font-weight: 800; line-height: 1;
+      color: var(--cream); margin-top: 4px;
+    }
+    .metric-val.red    { color: var(--red); }
+    .metric-val.amber  { color: var(--amber); }
+    .metric-val.green  { color: #4aa050; }
+    .metric-lbl {
+      font-size: .68rem; color: var(--muted);
+      letter-spacing: .06em; text-transform: uppercase;
+    }
+
+    /* LIVE BADGE */
+    .live-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(74,160,80,.1); border: 1px solid rgba(74,160,80,.3);
+      color: #4aa050; padding: 4px 12px; border-radius: 99px;
+      font-size: .7rem; font-weight: 700; letter-spacing: .08em;
+    }
+    .live-dot {
+      width: 6px; height: 6px; background: #4aa050; border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)} }
+
+    /* TABLE */
+    .table-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    .table-toolbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px; gap: 12px; flex-wrap: wrap;
+      border-bottom: 1px solid var(--border);
+    }
+    .table-title { font-size: .88rem; font-weight: 700; }
+    .toolbar-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .search-input {
+      padding: 7px 12px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--cream);
+      font-family: var(--font); font-size: .78rem; outline: none;
+      width: 200px;
+    }
+    .search-input:focus { border-color: var(--red); }
+    .filter-select {
+      padding: 7px 10px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--cream);
+      font-family: var(--font); font-size: .78rem; outline: none; cursor: pointer;
+    }
+    .btn-sm {
+      padding: 7px 14px;
+      border-radius: 7px; cursor: pointer;
+      font-family: var(--font); font-size: .75rem; font-weight: 700;
+      border: none; transition: opacity .15s;
+    }
+    .btn-sm:hover { opacity: .8; }
+    .btn-red    { background: var(--red);    color: var(--cream); }
+    .btn-amber  { background: var(--amber);  color: var(--ink); }
+    .btn-ghost  { background: var(--surface2); color: var(--cream); border: 1px solid var(--border); }
+    .btn-green  { background: #2a5a28;       color: #6acc68; }
+
+    table {
+      width: 100%; border-collapse: collapse; font-size: .8rem;
+    }
+    thead th {
+      text-align: left; padding: 10px 16px;
+      font-size: .66rem; letter-spacing: .08em; text-transform: uppercase;
+      color: var(--muted); border-bottom: 1px solid var(--border);
+      font-weight: 700; white-space: nowrap;
+    }
+    tbody td {
+      padding: 11px 16px;
+      border-bottom: 1px solid rgba(31,34,31,.5);
+      vertical-align: middle;
+    }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: rgba(255,255,255,.02); }
+    tbody tr.suspended td { opacity: .45; }
+
+    .td-name { font-weight: 600; color: var(--cream); }
+    .td-sub  { font-size: .7rem; color: var(--muted); margin-top: 1px; }
+    .td-muted { color: var(--muted); }
+
+    /* BADGES */
+    .badge {
+      display: inline-flex; align-items: center;
+      padding: 2px 8px; border-radius: 99px;
+      font-size: .67rem; font-weight: 700; letter-spacing: .04em;
+      border: 1px solid;
+    }
+    .badge-pro      { background: #0e2010; color: #4aa050; border-color: #1a4020; }
+    .badge-employer { background: #2e2510; color: var(--amber); border-color: #4a3a10; }
+    .badge-admin    { background: #2e1a10; color: var(--red); border-color: #5a2a10; }
+    .badge-suspended{ background: #2e1010; color: #e06060; border-color: #5a2020; }
+
+    .lvl-badge {
+      display: inline-flex; align-items: center;
+      padding: 2px 7px; border-radius: 99px;
+      font-size: .65rem; font-weight: 700; border: 1px solid;
+    }
+    .lvl-acesso       { background:#0d1a2e; color:#4a90d9; border-color:#1a3050; }
+    .lvl-padrao       { background:#0e2010; color:#4aa050; border-color:#1a4020; }
+    .lvl-especialista { background:#2e2510; color:var(--amber); border-color:#4a3a10; }
+    .lvl-elite        { background:#2e2510; color:var(--amber); border-color:var(--amber); }
+
+    /* TABLE ACTIONS */
+    .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .action-btn {
+      background: none; border: 1px solid var(--border);
+      border-radius: 6px; cursor: pointer; color: var(--muted);
+      font-family: var(--font); font-size: .7rem; font-weight: 600;
+      padding: 4px 9px; transition: all .15s; white-space: nowrap;
+    }
+    .action-btn:hover { border-color: var(--cream); color: var(--cream); }
+    .action-btn.danger:hover { border-color: var(--red); color: var(--red); }
+    .action-btn.warn:hover { border-color: var(--amber); color: var(--amber); }
+
+    /* PAGINATION */
+    .pagination {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 20px; border-top: 1px solid var(--border);
+      font-size: .75rem; color: var(--muted);
+    }
+    .page-btns { display: flex; gap: 4px; }
+    .page-btn {
+      padding: 4px 10px; border-radius: 6px;
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--cream); cursor: pointer; font-family: var(--font);
+      font-size: .75rem;
+    }
+    .page-btn:disabled { opacity: .3; cursor: not-allowed; }
+    .page-btn.active { background: var(--red); border-color: var(--red); }
+
+    /* MODAL */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.75);
+      z-index: 9999; display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .modal {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; padding: 28px;
+      width: 100%; max-width: 560px;
+      max-height: 90vh; overflow-y: auto;
+    }
+    .modal-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 20px; }
+    .modal-section { margin-bottom: 20px; }
+    .modal-section h4 {
+      font-size: .68rem; color: var(--muted); letter-spacing: .08em;
+      text-transform: uppercase; margin-bottom: 10px;
+    }
+    .info-row {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      padding: 7px 0; border-bottom: 1px solid rgba(31,34,31,.5);
+      font-size: .82rem; gap: 12px;
+    }
+    .info-row:last-child { border-bottom: none; }
+    .info-label { color: var(--muted); flex-shrink: 0; }
+    .info-value { color: var(--cream); font-weight: 500; text-align: right; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 24px; flex-wrap: wrap; }
+    .modal-close {
+      position: absolute; top: 20px; right: 20px;
+      background: none; border: none; color: var(--muted);
+      cursor: pointer; font-size: 1.2rem; padding: 4px;
+    }
+
+    /* TOAST */
+    #toast {
+      position: fixed; bottom: 24px; left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--cream); padding: 10px 20px;
+      border-radius: 99px; font-size: .8rem; font-weight: 600;
+      opacity: 0; transition: opacity .2s, transform .2s;
+      pointer-events: none; z-index: 99999; white-space: nowrap;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #toast.red  { background: var(--red); border-color: var(--red); }
+    #toast.green{ background: #2a5a28; border-color: #4aa050; color: #6acc68; }
+
+    /* SPINNER */
+    .spinner {
+      width: 20px; height: 20px;
+      border: 2px solid var(--border); border-top-color: var(--red);
+      border-radius: 50%; animation: spin .6s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-center {
+      display: flex; align-items: center; justify-content: center;
+      padding: 48px; gap: 12px; color: var(--muted); font-size: .82rem;
+    }
+
+    /* EMPTY */
+    .empty-row td {
+      text-align: center; color: var(--muted);
+      padding: 40px; font-size: .82rem;
+    }
+
+    /* STAT ROW (user detail) */
+    .stat-pills { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+    .stat-pill {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 8px 14px; text-align: center;
+    }
+    .stat-pill-val { font-size: 1.2rem; font-weight: 800; color: var(--cream); }
+    .stat-pill-lbl { font-size: .65rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+
+    /* CONFIRM DIALOG */
+    .confirm-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.8);
+      z-index: 99999; display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .confirm-box {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 28px; max-width: 380px; width: 100%;
+      text-align: center;
+    }
+    .confirm-icon { font-size: 2.5rem; margin-bottom: 14px; }
+    .confirm-title { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+    .confirm-desc { font-size: .82rem; color: var(--muted); margin-bottom: 24px; line-height: 1.6; }
+    .confirm-actions { display: flex; gap: 10px; }
+    .confirm-actions button { flex: 1; padding: 11px; border-radius: 9px; cursor: pointer;
+      font-family: var(--font); font-size: .85rem; font-weight: 700; border: none; }
+    .confirm-cancel { background: var(--surface2); color: var(--cream); border: 1px solid var(--border) !important; }
+    .confirm-ok { background: var(--red); color: var(--cream); }
+
+    /* CSV export btn */
+    .export-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 7px 14px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 7px; color: var(--cream);
+      font-family: var(--font); font-size: .75rem; font-weight: 700;
+      cursor: pointer; transition: border-color .15s;
+    }
+    .export-btn:hover { border-color: var(--amber); color: var(--amber); }
+
+    /* ACTIVITY LOG */
+    .log-entry {
+      display: flex; gap: 14px; padding: 12px 0;
+      border-bottom: 1px solid rgba(31,34,31,.5);
+      align-items: flex-start;
+    }
+    .log-entry:last-child { border-bottom: none; }
+    .log-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+    .log-text { font-size: .82rem; color: var(--cream); line-height: 1.5; }
+    .log-time { font-size: .7rem; color: var(--muted); margin-top: 2px; }
+
+    @media (max-width: 900px) {
+      .sidebar { transform: translateX(-100%); transition: transform .2s; }
+      .sidebar.open { transform: translateX(0); }
+      .main { margin-left: 0; padding: 20px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<!-- ═══════════════════════════════
+     LOGIN SCREEN
+═══════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <svg viewBox="0 0 960 960" xmlns="http://www.w3.org/2000/svg">
+        <rect width="960" height="960" fill="#cc472e" rx="180"/>
+        <path fill="#f7e6c1" d="M323.96,730.32h-38.33s0-325.78,0-325.78h38.33s312.08,108.42,312.08,108.42v-108.42h38.33v150.75h-38.33s-312.08-108.44-312.08-108.44v283.47Z"/>
+        <path fill="#f7e6c1" d="M674.37,609.73h-111.34v30.58h96.26v26.92h-96.26v32.95h111.34v30.15h-149.67v-150.74h149.67v30.15Z"/>
+        <path fill="#f7e6c1" d="M382.53,233.18c42.64,0,63.1,20.68,63.1,52.11s-20.46,52.33-63.1,52.33h-58.58v46.3h-38.33v-150.74h96.91ZM381.03,306.83c17.66,0,26.27-8.61,26.27-21.54s-8.61-21.32-26.27-21.32h-59.01v42.86h59.01Z"/>
+        <path fill="#f7e6c1" d="M466.1,307.64c0-43.38,41.73-77.96,102.46-77.96s105.81,30.34,105.81,77.96c0,44.29-34.65,79.78-105.44,79.78-53.65,0-102.83-30.94-102.83-79.78ZM625.94,361.03c0-25.48-62.59-120.43-95.38-120.43-9.32,0-14.9,5.46-14.9,14.86,0,29.73,64.46,121.04,95.01,121.04,10.06,0,15.28-5.16,15.28-15.47Z"/>
+        <path fill="#f7e6c1" d="M504.87,638.62h-.23c-16.94-36.01-35.91-53.18-56.23-55.48v143.83h20.32v3.35h-90.33v-3.35h20.32v-143.83c-20.1,2.3-39.07,19.47-56,55.48h-.23v-59.04h162.37v59.04Z"/>
+      </svg>
+      <div>
+        <div class="login-title">PONTE Admin</div>
+        <div class="login-sub">Acesso restrito</div>
+      </div>
+    </div>
+    <div class="login-badge">⚡ Masters only</div>
+    <div id="login-error"></div>
+    <div class="field">
+      <label>E-mail</label>
+      <input id="admin-email" type="email" placeholder="seu@email.com" autocomplete="email"/>
+    </div>
+    <div class="field">
+      <label>Senha</label>
+      <input id="admin-pw" type="password" placeholder="••••••••" autocomplete="current-password"/>
+    </div>
+    <button class="btn-login" id="btn-admin-login">Entrar</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════
+     APP
+═══════════════════════════════ -->
+<div id="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <svg viewBox="0 0 960 960" xmlns="http://www.w3.org/2000/svg">
+        <rect width="960" height="960" fill="#cc472e" rx="180"/>
+        <path fill="#f7e6c1" d="M323.96,730.32h-38.33s0-325.78,0-325.78h38.33s312.08,108.42,312.08,108.42v-108.42h38.33v150.75h-38.33s-312.08-108.44-312.08-108.44v283.47Z"/>
+        <path fill="#f7e6c1" d="M382.53,233.18c42.64,0,63.1,20.68,63.1,52.11s-20.46,52.33-63.1,52.33h-58.58v46.3h-38.33v-150.74h96.91ZM381.03,306.83c17.66,0,26.27-8.61,26.27-21.54s-8.61-21.32-26.27-21.32h-59.01v42.86h59.01Z"/>
+        <path fill="#f7e6c1" d="M466.1,307.64c0-43.38,41.73-77.96,102.46-77.96s105.81,30.34,105.81,77.96c0,44.29-34.65,79.78-105.44,79.78-53.65,0-102.83-30.94-102.83-79.78ZM625.94,361.03c0-25.48-62.59-120.43-95.38-120.43-9.32,0-14.9,5.46-14.9,14.86,0,29.73,64.46,121.04,95.01,121.04,10.06,0,15.28-5.16,15.28-15.47Z"/>
+        <path fill="#f7e6c1" d="M504.87,638.62h-.23c-16.94-36.01-35.91-53.18-56.23-55.48v143.83h20.32v3.35h-90.33v-3.35h20.32v-143.83c-20.1,2.3-39.07,19.47-56,55.48h-.23v-59.04h162.37v59.04Z"/>
+        <path fill="#f7e6c1" d="M674.37,609.73h-111.34v30.58h96.26v26.92h-96.26v32.95h111.34v30.15h-149.67v-150.74h149.67v30.15Z"/>
+      </svg>
+      <div>
+        <div class="sidebar-logo-text">PONTE</div>
+        <div class="sidebar-badge">Admin</div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <p class="nav-section-label">Principal</p>
+      <button class="nav-link active" data-page="dashboard">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+        Dashboard
+      </button>
+      <button class="nav-link" data-page="usuarios">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 3-1.34 3-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+        Usuários
+      </button>
+      <button class="nav-link" data-page="vagas">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-2.18c.07-.44.18-.86.18-1a3 3 0 0 0-6 0c0 .14.11.56.18 1H10V4H4v6h16V6zm0 4H4v10h16V10z"/></svg>
+        Vagas
+      </button>
+      <button class="nav-link" data-page="avaliacoes">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+        Avaliações
+      </button>
+
+      <p class="nav-section-label" style="margin-top:8px">Sistema</p>
+      <button class="nav-link" data-page="atividade">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2.05v2.02c3.95.49 7 3.85 7 7.93 0 3.21-1.81 6-4.72 7.28L13 17v5h5l-1.22-1.22C19.91 19.07 22 15.76 22 12c0-5.18-3.95-9.45-9-9.95zM11 2.05C5.95 2.55 2 6.82 2 12c0 3.76 2.09 7.07 5.22 8.78L6 22h5v-5l-2.28 2.28C7.81 18 6 15.21 6 12c0-4.08 3.05-7.44 7-7.93V2.05z"/></svg>
+        Atividade
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-user" id="admin-user-name"></div>
+      <button class="btn-logout" id="btn-admin-logout">Sair</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Dashboard</h1>
+          <p class="page-sub">Visão geral da plataforma em tempo real</p>
+        </div>
+        <div class="live-badge"><span class="live-dot"></span>Ao vivo</div>
+      </div>
+
+      <div class="metrics-grid" id="metrics-grid">
+        <div class="loading-center"><div class="spinner"></div></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px" id="dash-tables">
+        <!-- Usuários recentes -->
+        <div class="table-card">
+          <div class="table-toolbar">
+            <span class="table-title">Últimos cadastros</span>
+            <div class="live-badge" style="font-size:.65rem;padding:3px 8px"><span class="live-dot"></span>Live</div>
+          </div>
+          <table>
+            <thead><tr><th>Nome</th><th>Tipo</th><th>Cadastro</th></tr></thead>
+            <tbody id="dash-users-body"><tr class="empty-row"><td colspan="3"><div class="spinner"></div></td></tr></tbody>
+          </table>
+        </div>
+        <!-- Vagas recentes -->
+        <div class="table-card">
+          <div class="table-toolbar">
+            <span class="table-title">Vagas recentes</span>
+            <div class="live-badge" style="font-size:.65rem;padding:3px 8px"><span class="live-dot"></span>Live</div>
+          </div>
+          <table>
+            <thead><tr><th>Título</th><th>Status</th><th>Data</th></tr></thead>
+            <tbody id="dash-jobs-body"><tr class="empty-row"><td colspan="3"><div class="spinner"></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- USUÁRIOS -->
+    <div class="page" id="page-usuarios">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Usuários</h1>
+          <p class="page-sub" id="users-count">Carregando...</p>
+        </div>
+        <button class="export-btn" id="btn-export-users">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+          Exportar CSV
+        </button>
+      </div>
+      <div class="table-card">
+        <div class="table-toolbar">
+          <span class="table-title">Todos os usuários</span>
+          <div class="toolbar-right">
+            <input class="search-input" id="users-search" placeholder="Buscar por nome ou e-mail..." />
+            <select class="filter-select" id="users-filter-role">
+              <option value="">Todos os tipos</option>
+              <option value="professional">Profissionais</option>
+              <option value="employer">Contratantes</option>
+              <option value="admin">Admins</option>
+            </select>
+            <select class="filter-select" id="users-filter-status">
+              <option value="">Todos os status</option>
+              <option value="active">Ativos</option>
+              <option value="suspended">Suspensos</option>
+            </select>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead>
+              <tr>
+                <th>Nome / E-mail</th>
+                <th>Tipo</th>
+                <th>Categoria / Estabelecimento</th>
+                <th>Telefone</th>
+                <th>Cidade</th>
+                <th>Cadastro</th>
+                <th>Status</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="users-tbody"></tbody>
+          </table>
+        </div>
+        <div class="pagination" id="users-pagination"></div>
+      </div>
+    </div>
+
+    <!-- VAGAS -->
+    <div class="page" id="page-vagas">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Vagas</h1>
+          <p class="page-sub" id="jobs-count">Carregando...</p>
+        </div>
+        <button class="export-btn" id="btn-export-jobs">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+          Exportar CSV
+        </button>
+      </div>
+      <div class="table-card">
+        <div class="table-toolbar">
+          <span class="table-title">Todas as vagas</span>
+          <div class="toolbar-right">
+            <input class="search-input" id="jobs-search" placeholder="Buscar por título..." />
+            <select class="filter-select" id="jobs-filter-status">
+              <option value="">Todos os status</option>
+              <option value="open">Abertas</option>
+              <option value="filled">Confirmadas</option>
+              <option value="completed">Concluídas</option>
+              <option value="cancelled">Canceladas</option>
+            </select>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead>
+              <tr>
+                <th>Título</th>
+                <th>Categoria</th>
+                <th>Contratante</th>
+                <th>Data do evento</th>
+                <th>Valor</th>
+                <th>Candidatos</th>
+                <th>Status</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="jobs-tbody"></tbody>
+          </table>
+        </div>
+        <div class="pagination" id="jobs-pagination"></div>
+      </div>
+    </div>
+
+    <!-- AVALIAÇÕES -->
+    <div class="page" id="page-avaliacoes">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Avaliações</h1>
+          <p class="page-sub" id="reviews-count">Carregando...</p>
+        </div>
+      </div>
+      <div class="table-card">
+        <div class="table-toolbar">
+          <span class="table-title">Todas as avaliações</span>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead>
+              <tr>
+                <th>Profissional</th>
+                <th>Contratante</th>
+                <th>Média</th>
+                <th>Pontualidade</th>
+                <th>Apresentação</th>
+                <th>Técnica</th>
+                <th>Comentário</th>
+                <th>Data</th>
+              </tr>
+            </thead>
+            <tbody id="reviews-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ATIVIDADE -->
+    <div class="page" id="page-atividade">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Log de Atividade</h1>
+          <p class="page-sub">Ações recentes na plataforma</p>
+        </div>
+        <div class="live-badge"><span class="live-dot"></span>Ao vivo</div>
+      </div>
+      <div class="table-card" style="padding:0">
+        <div id="activity-log" style="padding:8px 20px">
+          <div class="loading-center"><div class="spinner"></div> Carregando...</div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script type="module">
+import { initializeApp }    from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import {
+  getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
+} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import {
+  getFirestore, collection, doc, getDoc, getDocs, updateDoc, deleteDoc,
+  query, where, orderBy, limit, onSnapshot, serverTimestamp
+} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import {
+  getStorage, ref, deleteObject
+} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
+
+// ── CONFIG ──────────────────────────────────────────────────
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyDf-Ds8SbM0xLo8oYOqet3xqhBWZQ4buKw",
+  authDomain:        "ponte-35c61.firebaseapp.com",
+  projectId:         "ponte-35c61",
+  storageBucket:     "ponte-35c61.firebasestorage.app",
+  messagingSenderId: "455720558425",
+  appId:             "1:455720558425:web:891fdc50dc13a57dfef648"
+};
+
+// ── WHITELIST — apenas estes e-mails têm acesso ao admin ────
+const ADMIN_EMAILS = [
+  'pedrospadotto@icloud.com',
+  'igor@ponte.app', // substitua pelo e-mail real do Igor
+];
+
+const app     = initializeApp(FIREBASE_CONFIG);
+const auth    = getAuth(app);
+const db      = getFirestore(app);
+const storage = getStorage(app);
+
+// ── STATE ───────────────────────────────────────────────────
+let ALL_USERS   = [];
+let ALL_JOBS    = [];
+let ALL_REVIEWS = [];
+let USER_PAGE   = 0;
+let JOB_PAGE    = 0;
+const PAGE_SIZE = 25;
+
+// ── UTILS ───────────────────────────────────────────────────
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+
+let _toastT;
+function toast(msg, type = '') {
+  const el = $('#toast');
+  el.textContent = msg;
+  el.className = 'show' + (type ? ' ' + type : '');
+  clearTimeout(_toastT);
+  _toastT = setTimeout(() => el.className = '', 2800);
+}
+
+function fmtDate(ts) {
+  if (!ts) return '—';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleDateString('pt-BR', { day:'2-digit', month:'short', year:'2-digit' });
+}
+function fmtDateTime(ts) {
+  if (!ts) return '—';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleDateString('pt-BR', { day:'2-digit', month:'short' }) + ' ' +
+         d.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+}
+
+const ROLE_LABELS = { professional:'Profissional', employer:'Contratante', admin:'Admin' };
+const CAT_LABELS  = {
+  garcom:'Garçom', bartender:'Bartender',
+  cozinheiro:'Cozinheiro', staff:'Staff'
+};
+const STATUS_LABELS = {
+  open:'Aberta', filled:'Confirmada', completed:'Concluída', cancelled:'Cancelada'
+};
+
+function roleBadge(role) {
+  const cls = { professional:'badge-pro', employer:'badge-employer', admin:'badge-admin' };
+  return `<span class="badge ${cls[role]||'badge-pro'}">${ROLE_LABELS[role]||role}</span>`;
+}
+function statusBadge(status) {
+  const colors = {
+    open:'color:#4aa050', filled:'color:var(--amber)',
+    completed:'color:var(--muted)', cancelled:'color:#e06060'
+  };
+  return `<span style="font-size:.75rem;font-weight:700;${colors[status]||''}">${STATUS_LABELS[status]||status}</span>`;
+}
+function stars(n) {
+  return '★'.repeat(Math.round(n||0)) + '☆'.repeat(5-Math.round(n||0));
+}
+
+// ── CONFIRM DIALOG ──────────────────────────────────────────
+function confirm(title, desc, icon = '⚠️') {
+  return new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.className = 'confirm-overlay';
+    overlay.innerHTML = `
+      <div class="confirm-box">
+        <div class="confirm-icon">${icon}</div>
+        <div class="confirm-title">${title}</div>
+        <div class="confirm-desc">${desc}</div>
+        <div class="confirm-actions">
+          <button class="confirm-cancel" id="cc">Cancelar</button>
+          <button class="confirm-ok" id="co">Confirmar</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.querySelector('#cc').onclick = () => { overlay.remove(); resolve(false); };
+    overlay.querySelector('#co').onclick = () => { overlay.remove(); resolve(true); };
+  });
+}
+
+// ── AUTH ────────────────────────────────────────────────────
+$('#btn-admin-login').addEventListener('click', async () => {
+  const email = $('#admin-email').value.trim();
+  const pw    = $('#admin-pw').value;
+  const errEl = $('#login-error');
+
+  if (!ADMIN_EMAILS.includes(email)) {
+    errEl.textContent = 'Acesso negado. Este e-mail não tem permissão de administrador.';
+    errEl.style.display = 'block'; return;
+  }
+  $('#btn-admin-login').disabled = true;
+  $('#btn-admin-login').textContent = '...';
+  try {
+    await signInWithEmailAndPassword(auth, email, pw);
+  } catch (err) {
+    const msgs = {
+      'auth/wrong-password':     'Senha incorreta.',
+      'auth/invalid-credential': 'E-mail ou senha incorretos.',
+      'auth/user-not-found':     'E-mail não encontrado.',
+    };
+    errEl.textContent = msgs[err.code] || 'Erro ao entrar.';
+    errEl.style.display = 'block';
+    $('#btn-admin-login').disabled = false;
+    $('#btn-admin-login').textContent = 'Entrar';
+  }
+});
+$('#admin-email').addEventListener('keydown', e => { if(e.key==='Enter') $('#admin-pw').focus(); });
+$('#admin-pw').addEventListener('keydown', e => { if(e.key==='Enter') $('#btn-admin-login').click(); });
+
+$('#btn-admin-logout').addEventListener('click', async () => {
+  await signOut(auth);
+});
+
+onAuthStateChanged(auth, user => {
+  if (user && ADMIN_EMAILS.includes(user.email)) {
+    $('#login-screen').style.display = 'none';
+    $('#app').classList.add('active');
+    $('#admin-user-name').textContent = user.email.split('@')[0];
+    initAdmin();
+  } else {
+    $('#login-screen').style.display = 'flex';
+    $('#app').classList.remove('active');
+  }
+});
+
+// ── NAV ─────────────────────────────────────────────────────
+$$('.nav-link').forEach(btn => {
+  btn.addEventListener('click', () => {
+    $$('.nav-link').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    $$('.page').forEach(p => p.classList.remove('active'));
+    $(`#page-${btn.dataset.page}`)?.classList.add('active');
+  });
+});
+
+// ── INIT ────────────────────────────────────────────────────
+let _unsubUsers, _unsubJobs;
+function initAdmin() {
+  loadDashboard();
+  loadUsers();
+  loadJobs();
+  loadReviews();
+  loadActivity();
+}
+
+// ── DASHBOARD ───────────────────────────────────────────────
+function loadDashboard() {
+  // Métricas via listener em tempo real
+  _unsubUsers?.();
+  _unsubJobs?.();
+
+  let usersData = [], jobsData = [];
+
+  function renderMetrics() {
+    const profs    = usersData.filter(u => u.role === 'professional');
+    const emps     = usersData.filter(u => u.role === 'employer');
+    const suspended= usersData.filter(u => u.suspended);
+    const openJobs = jobsData.filter(j => j.status === 'open');
+    const doneJobs = jobsData.filter(j => j.status === 'completed');
+
+    $('#metrics-grid').innerHTML = [
+      { icon:'👥', val:usersData.length, lbl:'Usuários totais', cls:'' },
+      { icon:'👤', val:profs.length,     lbl:'Profissionais',  cls:'green' },
+      { icon:'🏢', val:emps.length,      lbl:'Contratantes',   cls:'amber' },
+      { icon:'🚫', val:suspended.length, lbl:'Suspensos',      cls:'red' },
+      { icon:'📋', val:openJobs.length,  lbl:'Vagas abertas',  cls:'amber' },
+      { icon:'✅', val:doneJobs.length,  lbl:'Concluídas',     cls:'green' },
+      { icon:'📊', val:jobsData.length,  lbl:'Total de vagas', cls:'' },
+    ].map(m => `
+      <div class="metric-card">
+        <span class="metric-icon">${m.icon}</span>
+        <span class="metric-val ${m.cls}">${m.val}</span>
+        <span class="metric-lbl">${m.lbl}</span>
+      </div>`).join('');
+  }
+
+  _unsubUsers = onSnapshot(collection(db, 'users'), snap => {
+    usersData = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+    renderMetrics();
+    // Tabela de últimos cadastros
+    const sorted = [...usersData].sort((a,b) =>
+      (b.createdAt?.toMillis?.()??0) - (a.createdAt?.toMillis?.()??0));
+    $('#dash-users-body').innerHTML = sorted.slice(0,8).map(u => `
+      <tr>
+        <td class="td-name">${u.name||'—'}</td>
+        <td>${roleBadge(u.role)}</td>
+        <td class="td-muted">${fmtDate(u.createdAt)}</td>
+      </tr>`).join('') || '<tr class="empty-row"><td colspan="3">Nenhum usuário</td></tr>';
+  });
+
+  _unsubJobs = onSnapshot(collection(db, 'jobs'), snap => {
+    jobsData = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+    renderMetrics();
+    const sorted = [...jobsData].sort((a,b) =>
+      (b.createdAt?.toMillis?.()??0) - (a.createdAt?.toMillis?.()??0));
+    $('#dash-jobs-body').innerHTML = sorted.slice(0,8).map(j => `
+      <tr>
+        <td class="td-name">${j.title||'—'}</td>
+        <td>${statusBadge(j.status)}</td>
+        <td class="td-muted">${fmtDate(j.createdAt)}</td>
+      </tr>`).join('') || '<tr class="empty-row"><td colspan="3">Nenhuma vaga</td></tr>';
+  });
+}
+
+// ── USERS PAGE ──────────────────────────────────────────────
+async function loadUsers() {
+  const snap = await getDocs(collection(db, 'users'));
+  const profSnap = await getDocs(collection(db, 'professionals'));
+  const empSnap  = await getDocs(collection(db, 'employers'));
+
+  const profMap = Object.fromEntries(profSnap.docs.map(d => [d.id, d.data()]));
+  const empMap  = Object.fromEntries(empSnap.docs.map(d => [d.id, d.data()]));
+
+  ALL_USERS = snap.docs.map(d => {
+    const u = { id:d.id, ...d.data() };
+    if (u.role === 'professional') u._prof = profMap[d.id] || {};
+    if (u.role === 'employer')     u._emp  = empMap[d.id]  || {};
+    return u;
+  }).sort((a,b) => (b.createdAt?.toMillis?.()??0) - (a.createdAt?.toMillis?.()??0));
+
+  renderUsersTable();
+  setupUsersFilters();
+}
+
+function renderUsersTable() {
+  const search = $('#users-search')?.value.toLowerCase() || '';
+  const role   = $('#users-filter-role')?.value || '';
+  const status = $('#users-filter-status')?.value || '';
+
+  let filtered = ALL_USERS.filter(u => {
+    if (role && u.role !== role) return false;
+    if (status === 'active'    && u.suspended) return false;
+    if (status === 'suspended' && !u.suspended) return false;
+    if (search) {
+      const haystack = [u.name, u.email, u._prof?.category, u._emp?.businessName]
+        .join(' ').toLowerCase();
+      if (!haystack.includes(search)) return false;
+    }
+    return true;
+  });
+
+  $('#users-count').textContent = `${filtered.length} usuário${filtered.length !== 1 ? 's' : ''}`;
+
+  const total = Math.ceil(filtered.length / PAGE_SIZE);
+  const page  = filtered.slice(USER_PAGE * PAGE_SIZE, (USER_PAGE+1) * PAGE_SIZE);
+
+  $('#users-tbody').innerHTML = page.length ? page.map(u => {
+    const cat = u.role === 'professional'
+      ? (CAT_LABELS[u._prof?.category] || u._prof?.category || '—')
+      : (u._emp?.businessName || '—');
+    const addr = u.address;
+    const city = addr?.cidade || u._prof?.city || u._emp?.city || 'Bauru';
+    return `
+      <tr class="${u.suspended ? 'suspended' : ''}" data-uid="${u.id}">
+        <td>
+          <div class="td-name">${u.name||'—'}</div>
+          <div class="td-sub">${u.email||'—'}</div>
+        </td>
+        <td>${roleBadge(u.role)}${u.suspended ? ' <span class="badge badge-suspended">Suspenso</span>' : ''}</td>
+        <td class="td-muted">${cat}</td>
+        <td class="td-muted">${u.phone||'—'}</td>
+        <td class="td-muted">${city}</td>
+        <td class="td-muted">${fmtDate(u.createdAt)}</td>
+        <td>
+          ${u.role === 'professional'
+            ? `<span class="lvl-badge lvl-${(u._prof?.level||'ACESSO').toLowerCase()}">${u._prof?.level||'ACESSO'}</span>`
+            : '<span style="color:var(--muted);font-size:.75rem">—</span>'}
+        </td>
+        <td>
+          <div class="actions">
+            <button class="action-btn" onclick="viewUser('${u.id}')">Ver</button>
+            ${!u.suspended
+              ? `<button class="action-btn warn" onclick="suspendUser('${u.id}','${u.name}')">Suspender</button>`
+              : `<button class="action-btn" onclick="reactivateUser('${u.id}','${u.name}')">Reativar</button>`}
+            <button class="action-btn danger" onclick="deleteUser('${u.id}','${u.name}')">Excluir</button>
+          </div>
+        </td>
+      </tr>`;
+  }).join('') : '<tr class="empty-row"><td colspan="8">Nenhum usuário encontrado</td></tr>';
+
+  // Pagination
+  $('#users-pagination').innerHTML = `
+    <span>${filtered.length} usuários · Página ${USER_PAGE+1} de ${total||1}</span>
+    <div class="page-btns">
+      <button class="page-btn" onclick="usersPage(-1)" ${USER_PAGE===0?'disabled':''}>← Anterior</button>
+      <button class="page-btn" onclick="usersPage(1)"  ${USER_PAGE>=total-1?'disabled':''}>Próxima →</button>
+    </div>`;
+}
+
+function setupUsersFilters() {
+  ['#users-search','#users-filter-role','#users-filter-status'].forEach(sel => {
+    $(sel)?.addEventListener('input', () => { USER_PAGE=0; renderUsersTable(); });
+  });
+}
+
+window.usersPage = (dir) => { USER_PAGE = Math.max(0, USER_PAGE+dir); renderUsersTable(); };
+
+// VIEW USER MODAL
+window.viewUser = async (uid) => {
+  const u = ALL_USERS.find(x => x.id === uid);
+  if (!u) return;
+  const addr = u.address || {};
+
+  // Busca candidaturas e avaliações do usuário
+  let appsCount = 0, reviewsAvg = '—';
+  if (u.role === 'professional') {
+    const appsSnap = await getDocs(query(collection(db,'applications'), where('professionalUid','==',uid)));
+    appsCount = appsSnap.size;
+    const p = u._prof || {};
+    reviewsAvg = p.averageRating ? p.averageRating.toFixed(1) : '—';
+  }
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  modal.innerHTML = `
+    <div class="modal" style="position:relative">
+      <button class="modal-close" id="mc">✕</button>
+      <div class="modal-title">
+        ${u.name}
+        ${roleBadge(u.role)}
+        ${u.suspended ? '<span class="badge badge-suspended">Suspenso</span>' : ''}
+      </div>
+
+      <div class="modal-section">
+        <h4>Dados pessoais</h4>
+        ${row('E-mail', u.email)}
+        ${row('Telefone', u.phone||'—')}
+        ${row('Cadastro', fmtDateTime(u.createdAt))}
+        ${row('Último acesso', fmtDateTime(u.updatedAt))}
+      </div>
+
+      ${u.address?.logradouro ? `
+      <div class="modal-section">
+        <h4>Endereço</h4>
+        ${row('Rua', `${addr.logradouro||'—'}, ${addr.numero||'—'} ${addr.complemento?'· '+addr.complemento:''}`)}
+        ${row('Bairro', addr.bairro||'—')}
+        ${row('Cidade / UF', `${addr.cidade||'Bauru'} / ${addr.estado||'SP'}`)}
+        ${row('CEP', addr.cep||'—')}
+      </div>` : ''}
+
+      ${u.role === 'professional' ? `
+      <div class="modal-section">
+        <h4>Perfil profissional</h4>
+        ${row('Especialidade', CAT_LABELS[u._prof?.category]||u._prof?.category||'—')}
+        ${row('Nível', u._prof?.level||'ACESSO')}
+        ${row('Eventos realizados', u._prof?.totalEvents||0)}
+        ${row('Média geral', reviewsAvg)}
+        ${row('No-shows', u._prof?.noShows||0)}
+        ${row('Disponível', u._prof?.isAvailable ? '✅ Sim' : '❌ Não')}
+        ${u._prof?.bio ? row('Bio', u._prof.bio) : ''}
+      </div>` : ''}
+
+      ${u.role === 'employer' ? `
+      <div class="modal-section">
+        <h4>Estabelecimento</h4>
+        ${row('Nome', u._emp?.businessName||'—')}
+        ${row('Tipo', u._emp?.businessType||'—')}
+        ${row('Equipe fixa', (u._emp?.fixedTeam||[]).length + ' membros')}
+      </div>` : ''}
+
+      <div class="modal-actions">
+        ${!u.suspended
+          ? `<button class="btn-sm btn-amber" onclick="suspendUser('${uid}','${u.name}');this.closest('.modal-overlay').remove()">Suspender conta</button>`
+          : `<button class="btn-sm btn-green" onclick="reactivateUser('${uid}','${u.name}');this.closest('.modal-overlay').remove()">Reativar conta</button>`}
+        <button class="btn-sm btn-red" onclick="deleteUser('${uid}','${u.name}');this.closest('.modal-overlay').remove()">Excluir conta</button>
+        <button class="btn-sm btn-ghost" id="mc2">Fechar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.querySelector('#mc').onclick  = () => modal.remove();
+  modal.querySelector('#mc2').onclick = () => modal.remove();
+  modal.addEventListener('click', e => { if(e.target === modal) modal.remove(); });
+};
+
+function row(label, value) {
+  return `<div class="info-row"><span class="info-label">${label}</span><span class="info-value">${value}</span></div>`;
+}
+
+// SUSPEND / REACTIVATE / DELETE
+window.suspendUser = async (uid, name) => {
+  const ok = await confirm('Suspender conta', `Tem certeza que deseja suspender a conta de <strong>${name}</strong>? O usuário não conseguirá mais usar o app.`, '🚫');
+  if (!ok) return;
+  await updateDoc(doc(db,'users',uid), { suspended: true, suspendedAt: serverTimestamp() });
+  await loadUsers();
+  toast(`${name} suspenso(a).`, 'red');
+};
+
+window.reactivateUser = async (uid, name) => {
+  const ok = await confirm('Reativar conta', `Reativar a conta de <strong>${name}</strong>?`, '✅');
+  if (!ok) return;
+  await updateDoc(doc(db,'users',uid), { suspended: false, suspendedAt: null });
+  await loadUsers();
+  toast(`${name} reativado(a).`, 'green');
+};
+
+window.deleteUser = async (uid, name) => {
+  const ok = await confirm(
+    'Excluir conta permanentemente',
+    `⚠️ Esta ação NÃO pode ser desfeita. Todos os dados de <strong>${name}</strong> serão removidos do Firestore. A conta de autenticação precisará ser removida manualmente no Firebase Console (Authentication).`,
+    '🗑️'
+  );
+  if (!ok) return;
+  // Remove documentos do Firestore
+  try {
+    await deleteDoc(doc(db,'users',uid));
+    await deleteDoc(doc(db,'professionals',uid)).catch(()=>{});
+    await deleteDoc(doc(db,'employers',uid)).catch(()=>{});
+    // Tenta remover foto do Storage
+    try {
+      await deleteObject(ref(storage,`profile_photos/${uid}.webp`));
+    } catch(_) {}
+    await loadUsers();
+    toast(`Dados de ${name} removidos.`, 'red');
+  } catch(err) {
+    toast('Erro ao excluir: ' + err.message, 'red');
+  }
+};
+
+// EXPORT CSV — Usuários
+$('#btn-export-users').addEventListener('click', () => {
+  const headers = ['Nome','Email','Tipo','Categoria/Estabelecimento','Telefone','CEP','Rua','Número','Bairro','Cidade','Estado','Cadastro','Suspenso'];
+  const rows = ALL_USERS.map(u => {
+    const addr = u.address || {};
+    const cat = u.role==='professional'
+      ? (CAT_LABELS[u._prof?.category]||u._prof?.category||'')
+      : (u._emp?.businessName||'');
+    return [
+      u.name, u.email, ROLE_LABELS[u.role]||u.role,
+      cat, u.phone||'',
+      addr.cep||'', addr.logradouro||'', addr.numero||'',
+      addr.bairro||'', addr.cidade||'Bauru', addr.estado||'SP',
+      fmtDate(u.createdAt),
+      u.suspended ? 'Sim' : 'Não',
+    ].map(v => `"${String(v).replace(/"/g,'""')}"`);
+  });
+  downloadCSV([headers, ...rows], 'ponte-usuarios.csv');
+});
+
+// ── JOBS PAGE ────────────────────────────────────────────────
+async function loadJobs() {
+  const snap = await getDocs(collection(db,'jobs'));
+  ALL_JOBS = snap.docs.map(d => ({id:d.id,...d.data()}))
+    .sort((a,b) => (b.createdAt?.toMillis?.()??0)-(a.createdAt?.toMillis?.()??0));
+  renderJobsTable();
+  setupJobsFilters();
+}
+
+function renderJobsTable() {
+  const search = $('#jobs-search')?.value.toLowerCase() || '';
+  const status = $('#jobs-filter-status')?.value || '';
+  const CAT = {garcom:'Garçom',bartender:'Bartender',cozinheiro:'Cozinheiro',staff:'Staff'};
+
+  let filtered = ALL_JOBS.filter(j => {
+    if (status && j.status !== status) return false;
+    if (search && !(j.title||'').toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  $('#jobs-count').textContent = `${filtered.length} vaga${filtered.length!==1?'s':''}`;
+  const total = Math.ceil(filtered.length/PAGE_SIZE);
+  const page  = filtered.slice(JOB_PAGE*PAGE_SIZE,(JOB_PAGE+1)*PAGE_SIZE);
+
+  $('#jobs-tbody').innerHTML = page.length ? page.map(j => `
+    <tr data-jid="${j.id}">
+      <td>
+        <div class="td-name">${j.title||'—'}</div>
+        <div class="td-sub">${j.date ? new Date(j.date).toLocaleDateString('pt-BR') : '—'}</div>
+      </td>
+      <td class="td-muted">${CAT[j.category]||j.category||'—'}</td>
+      <td class="td-muted">${j.businessName||'—'}</td>
+      <td class="td-muted">${j.date ? new Date(j.date).toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'2-digit'}) : '—'}</td>
+      <td class="td-muted">${j.pay ? 'R$ '+j.pay : '—'}</td>
+      <td class="td-muted">${(j.applicants||[]).length}</td>
+      <td>${statusBadge(j.status)}</td>
+      <td>
+        <div class="actions">
+          <button class="action-btn warn" onclick="cancelJob('${j.id}','${j.title}')">Cancelar</button>
+          <button class="action-btn danger" onclick="deleteJob('${j.id}','${j.title}')">Excluir</button>
+        </div>
+      </td>
+    </tr>`).join('')
+  : '<tr class="empty-row"><td colspan="8">Nenhuma vaga encontrada</td></tr>';
+
+  $('#jobs-pagination').innerHTML = `
+    <span>${filtered.length} vagas · Página ${JOB_PAGE+1} de ${total||1}</span>
+    <div class="page-btns">
+      <button class="page-btn" onclick="jobsPage(-1)" ${JOB_PAGE===0?'disabled':''}>← Anterior</button>
+      <button class="page-btn" onclick="jobsPage(1)"  ${JOB_PAGE>=total-1?'disabled':''}>Próxima →</button>
+    </div>`;
+}
+
+function setupJobsFilters() {
+  ['#jobs-search','#jobs-filter-status'].forEach(sel => {
+    $(sel)?.addEventListener('input', () => { JOB_PAGE=0; renderJobsTable(); });
+  });
+}
+window.jobsPage = (dir) => { JOB_PAGE=Math.max(0,JOB_PAGE+dir); renderJobsTable(); };
+
+window.cancelJob = async (id, title) => {
+  const ok = await confirm('Cancelar vaga', `Cancelar a vaga "<strong>${title}</strong>"?`, '⚠️');
+  if (!ok) return;
+  await updateDoc(doc(db,'jobs',id), { status:'cancelled' });
+  await loadJobs();
+  toast('Vaga cancelada.');
+};
+window.deleteJob = async (id, title) => {
+  const ok = await confirm('Excluir vaga', `Excluir permanentemente a vaga "<strong>${title}</strong>"?`, '🗑️');
+  if (!ok) return;
+  await deleteDoc(doc(db,'jobs',id));
+  await loadJobs();
+  toast('Vaga excluída.', 'red');
+};
+
+$('#btn-export-jobs').addEventListener('click', () => {
+  const headers = ['Título','Categoria','Contratante','Data','Horário','Valor','Status','Endereço'];
+  const rows = ALL_JOBS.map(j => [
+    j.title, j.category, j.businessName, j.date,
+    `${j.startTime||''}–${j.endTime||''}`,
+    j.pay ? 'R$ '+j.pay : '',
+    STATUS_LABELS[j.status]||j.status,
+    j.address||''
+  ].map(v => `"${String(v||'').replace(/"/g,'""')}"`));
+  downloadCSV([headers,...rows], 'ponte-vagas.csv');
+});
+
+// ── REVIEWS PAGE ─────────────────────────────────────────────
+async function loadReviews() {
+  const snap = await getDocs(collection(db,'reviews'));
+  ALL_REVIEWS = snap.docs.map(d=>({id:d.id,...d.data()}))
+    .sort((a,b)=>(b.createdAt?.toMillis?.()??0)-(a.createdAt?.toMillis?.()??0));
+
+  $('#reviews-count').textContent = `${ALL_REVIEWS.length} avaliação${ALL_REVIEWS.length!==1?'ões':''}`;
+
+  // Enriquece com nomes
+  const uids = [...new Set([...ALL_REVIEWS.map(r=>r.professionalUid), ...ALL_REVIEWS.map(r=>r.employerUid)])].filter(Boolean);
+  const nameMap = {};
+  await Promise.all(uids.map(async uid => {
+    try {
+      const s = await getDoc(doc(db,'users',uid));
+      if (s.exists()) nameMap[uid] = s.data().name;
+    } catch(_) {}
+  }));
+
+  $('#reviews-tbody').innerHTML = ALL_REVIEWS.length ? ALL_REVIEWS.map(r => `
+    <tr>
+      <td class="td-name">${nameMap[r.professionalUid]||r.professionalUid?.slice(0,8)||'—'}</td>
+      <td class="td-muted">${nameMap[r.employerUid]||'—'}</td>
+      <td><span style="color:var(--amber);font-weight:700">${r.average?.toFixed(1)||'—'}</span></td>
+      <td class="td-muted">${r.punctuality||'—'}</td>
+      <td class="td-muted">${r.presentation||'—'}</td>
+      <td class="td-muted">${r.technique||'—'}</td>
+      <td class="td-muted" style="max-width:200px;white-space:normal;font-size:.75rem">${r.comment||'—'}</td>
+      <td class="td-muted">${fmtDate(r.createdAt)}</td>
+    </tr>`).join('')
+  : '<tr class="empty-row"><td colspan="8">Nenhuma avaliação</td></tr>';
+}
+
+// ── ACTIVITY LOG ─────────────────────────────────────────────
+function loadActivity() {
+  // Escuta as coleções principais e monta um log em tempo real
+  const entries = [];
+
+  const addEntry = (icon, color, text, ts) => {
+    entries.unshift({ icon, color, text, ts });
+    entries.splice(50, entries.length); // máximo 50 entradas
+    renderLog();
+  };
+
+  onSnapshot(collection(db,'users'), snap => {
+    snap.docChanges().forEach(change => {
+      if (change.type === 'added') {
+        const u = change.doc.data();
+        addEntry('👤', '#4aa050',
+          `Novo cadastro: <strong>${u.name}</strong> (${ROLE_LABELS[u.role]||u.role})`,
+          u.createdAt);
+      }
+    });
+  });
+
+  onSnapshot(collection(db,'jobs'), snap => {
+    snap.docChanges().forEach(change => {
+      const j = change.doc.data();
+      if (change.type === 'added') {
+        addEntry('📋', 'var(--amber)',
+          `Nova vaga publicada: <strong>${j.title}</strong> — ${j.businessName||''}`,
+          j.createdAt);
+      } else if (change.type === 'modified' && j.status === 'completed') {
+        addEntry('✅', '#4aa050',
+          `Vaga concluída: <strong>${j.title}</strong>`,
+          j.updatedAt);
+      }
+    });
+  });
+
+  onSnapshot(collection(db,'reviews'), snap => {
+    snap.docChanges().forEach(change => {
+      if (change.type === 'added') {
+        const r = change.doc.data();
+        addEntry('⭐', 'var(--amber)',
+          `Nova avaliação — média <strong>${r.average?.toFixed(1)}</strong>`,
+          r.createdAt);
+      }
+    });
+  });
+}
+
+function renderLog() {
+  const log = $('#activity-log');
+  if (!log) return;
+  log.innerHTML = `<div style="padding:8px 0">
+    ${window._logEntries?.map(e => `
+      <div class="log-entry">
+        <span class="log-dot" style="background:${e.color}"></span>
+        <div>
+          <div class="log-text">${e.icon} ${e.text}</div>
+          <div class="log-time">${fmtDateTime(e.ts)}</div>
+        </div>
+      </div>`).join('') || '<div style="padding:20px;color:var(--muted);font-size:.82rem">Aguardando atividade...</div>'}
+  </div>`;
+}
+
+// Armazena as entradas globalmente para o renderLog ter acesso
+window._logEntries = [];
+const origLoadActivity = loadActivity;
+function loadActivity() {
+  const addEntry = (icon, color, text, ts) => {
+    window._logEntries.unshift({ icon, color, text, ts });
+    window._logEntries.splice(50, window._logEntries.length);
+    renderLog();
+  };
+  $('#activity-log').innerHTML = '<div style="padding:20px;color:var(--muted);font-size:.82rem">Aguardando atividade em tempo real...</div>';
+
+  onSnapshot(collection(db,'users'), snap => {
+    snap.docChanges().forEach(c => {
+      if (c.type==='added') {
+        const u=c.doc.data();
+        addEntry('👤','#4aa050',`Novo cadastro: <strong>${u.name}</strong> (${ROLE_LABELS[u.role]||u.role})`,u.createdAt);
+      }
+      if (c.type==='modified' && c.doc.data().suspended) {
+        const u=c.doc.data();
+        addEntry('🚫','#e06060',`Conta suspensa: <strong>${u.name}</strong>`,c.doc.data().suspendedAt);
+      }
+    });
+  });
+  onSnapshot(collection(db,'jobs'), snap => {
+    snap.docChanges().forEach(c => {
+      const j=c.doc.data();
+      if (c.type==='added') addEntry('📋','var(--amber)',`Nova vaga: <strong>${j.title}</strong> — ${j.businessName||''}`,j.createdAt);
+      if (c.type==='modified'&&j.status==='completed') addEntry('✅','#4aa050',`Vaga concluída: <strong>${j.title}</strong>`,j.updatedAt);
+      if (c.type==='modified'&&j.status==='filled') addEntry('🔗','var(--amber)',`Profissional confirmado em: <strong>${j.title}</strong>`,j.updatedAt);
+    });
+  });
+  onSnapshot(collection(db,'reviews'), snap => {
+    snap.docChanges().forEach(c => {
+      if (c.type==='added'){const r=c.doc.data();addEntry('⭐','var(--amber)',`Nova avaliação — média <strong>${r.average?.toFixed(1)}</strong>`,r.createdAt);}
+    });
+  });
+  onSnapshot(collection(db,'applications'), snap => {
+    snap.docChanges().forEach(c => {
+      if (c.type==='added'){const a=c.doc.data();addEntry('📨','#4a90d9',`Nova candidatura de <strong>${a.professionalName}</strong>`,a.createdAt);}
+    });
+  });
+}
+
+// ── CSV HELPER ───────────────────────────────────────────────
+function downloadCSV(rows, filename) {
+  const csv = rows.map(r => r.join(',')).join('\n');
+  const blob = new Blob(['\ufeff'+csv], { type:'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+  toast('CSV exportado!', 'green');
+}
+</script>
+</body>
+</html>
