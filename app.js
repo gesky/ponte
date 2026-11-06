@@ -162,7 +162,9 @@ $('#form-login').addEventListener('submit', async (e) => {
   btn.disabled = true; btn.textContent = '...';
   $('#login-error').style.display = 'none';
   try {
-    await loginUser($('#login-email').value.trim(), $('#login-pw').value);
+    const pwv = $('#login-pw').value;
+    if (!pwv) { $('#login-error').textContent = 'Digite sua senha.'; $('#login-error').style.display = 'block'; btn.disabled = false; btn.textContent = 'Entrar'; return; }
+    await loginUser($('#login-email').value.trim().toLowerCase(), pwv);
   } catch (err) {
     $('#login-error').textContent = friendlyErr(err.code);
     $('#login-error').style.display = 'block';
@@ -268,7 +270,7 @@ $('#form-register').addEventListener('submit', async (e) => {
   }
 
   const name  = $('#reg-name').value.trim();
-  const email = $('#reg-email').value.trim();
+  const email = $('#reg-email').value.trim().toLowerCase();
   const pw    = $('#reg-pw').value;
   const pw2   = $('#reg-pw2').value;
   const phone = $('#reg-phone').value.trim();
@@ -276,8 +278,10 @@ $('#form-register').addEventListener('submit', async (e) => {
   if (!name)  { showRegError('Digite seu nome.'); return; }
   if (!email) { showRegError('Digite seu e-mail.'); return; }
   if (!phone) { showRegError('Digite seu WhatsApp.'); return; }
-  if (pw !== pw2) { showRegError('As senhas nao coincidem.'); return; }
+  if (!pw)  { showRegError('Digite uma senha.'); return; }
   if (pw.length < 6) { showRegError('A senha deve ter pelo menos 6 caracteres.'); return; }
+  if (!pw2) { showRegError('Repita a senha no campo de confirmacao.'); return; }
+  if (pw !== pw2) { showRegError('As senhas nao coincidem. Digite novamente nos dois campos.'); return; }
 
   if (selectedRole === 'professional' && !$('#reg-category')?.value) {
     showRegError('Selecione sua especialidade.'); return;
@@ -305,7 +309,7 @@ $('#form-register').addEventListener('submit', async (e) => {
     resetRegister();
   } catch (err) {
     console.error('Register error:', err);
-    const msg = friendlyErr(err.code) || err.message || 'Erro ao criar conta. Tente novamente.';
+    const msg = (err.code ? friendlyErr(err.code) : err.message) || 'Erro ao criar conta. Tente novamente.';
     console.error('Register error:', err);
     showRegError(msg);
     btn.disabled = false;
@@ -1439,6 +1443,11 @@ function friendlyErr(code) {
     'auth/too-many-requests':  'Muitas tentativas. Tente mais tarde.',
     'auth/email-already-in-use':'E-mail já cadastrado.',
     'auth/weak-password':      'Senha muito fraca.',
-    'auth/invalid-credential': 'E-mail ou senha incorretos.',
+    'auth/invalid-credential': 'E-mail ou senha incorretos. Se nao tem conta ainda, toque em Criar conta.',
+    'auth/missing-password':   'Digite sua senha.',
+    'auth/missing-email':      'Digite seu e-mail.',
+    'auth/network-request-failed': 'Sem conexao. Verifique a internet e tente de novo.',
+    'auth/operation-not-allowed':  'Cadastro indisponivel no momento.',
+    'auth/user-disabled':      'Conta desativada. Fale com o suporte.',
   })[code] || 'Erro. Tente novamente.';
 }
